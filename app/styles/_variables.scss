@@ -1,0 +1,109 @@
+// CSS Custom Properties für Farben
+:root {
+  // Primärfarben
+  --color-primary: #000000;
+  --color-primary-hover: #333333;
+  --color-primary-light: #f5f5f5;
+  
+  // Textfarben
+  --color-text-primary: #000000;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-inverse: #ffffff;
+  
+  // Hintergrundfarben
+  --color-background: #ffffff;
+  --color-background-secondary: #fafafa;
+  --color-background-tertiary: #f5f5f5;
+  
+  // Borderfarben
+  --color-border: #e5e5e5;
+  --color-border-light: #f0f0f0;
+  --color-border-dark: #cccccc;
+  
+  // Zustandsfarben
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  
+  // Spacing
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  // Typography
+  --font-family-sans: var(--font-nunito), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'Courier New', 'Monaco', 'Menlo', monospace;
+  
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+  --font-size-4xl: 40px;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  // Border Radius
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  // Shadows
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  // Transitions
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+  
+  // Z-Index
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+// Dark Mode (optional, falls später benötigt)
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #ffffff;
+    --color-primary-hover: #e5e5e5;
+    --color-primary-light: #1a1a1a;
+    
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a3a3a3;
+    --color-text-tertiary: #737373;
+    --color-text-inverse: #000000;
+    
+    --color-background: #0a0a0a;
+    --color-background-secondary: #171717;
+    --color-background-tertiary: #262626;
+    
+    --color-border: #404040;
+    --color-border-light: #2a2a2a;
+    --color-border-dark: #525252;
+  }
+}
+

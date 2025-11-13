@@ -1,0 +1,137 @@
+// Mixins für wiederverwendbare Styles
+
+// Flexbox Center
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Flexbox Space Between
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Button Reset
+@mixin button-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+// Visually Hidden (für Accessibility)
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Truncate Text
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Multi-line Truncate
+@mixin line-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Focus Visible (für Accessibility)
+@mixin focus-visible {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Container
+@mixin container($max-width: 1200px) {
+  width: 100%;
+  max-width: $max-width;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+  
+  @media (min-width: 768px) {
+    padding: 0 var(--spacing-lg);
+  }
+}
+
+// Card
+@mixin card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+// Button Base
+@mixin button-base {
+  @include button-reset;
+  @include focus-visible;
+  
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Input Base
+@mixin input-base {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  transition: border-color var(--transition-base);
+  
+  @include focus-visible;
+  
+  &:focus {
+    border-color: var(--color-primary);
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-background-tertiary);
+  }
+}
+

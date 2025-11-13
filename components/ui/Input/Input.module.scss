@@ -1,0 +1,35 @@
+@use '../../../app/styles/_variables' as *;
+@use '../../../app/styles/_mixins' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+.input {
+  @include input-base;
+}
+
+.error {
+  border-color: var(--color-error);
+  
+  &:focus {
+    border-color: var(--color-error);
+  }
+}
+
+.errorMessage {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  line-height: var(--line-height-normal);
+}
+
