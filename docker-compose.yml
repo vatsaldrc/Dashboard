@@ -1,0 +1,51 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: botpress_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-botpress_db}
+      MYSQL_USER: ${MYSQL_USER:-botpress_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-botpress_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - botpress_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: botpress_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-botpress_user}:${MYSQL_PASSWORD:-botpress_password}@mysql:3306/${MYSQL_DATABASE:-botpress_db}
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - botpress_network
+
+volumes:
+  mysql_data:
+
+networks:
+  botpress_network:
+    driver: bridge
+
