@@ -26,36 +26,36 @@ model User {
 }
 
 model BotpressAnalytics {
-    id               Int      @id @default(autoincrement())
-    botId            String?
-    rangeLabel       String   @db.VarChar(50)
-    startDatetimeUtc DateTime @map("start_datetime_utc")
-    endDatetimeUtc   DateTime @map("end_datetime_utc")
-    returningUsers   Int      @default(0) @map("returning_users")
-    newUsers         Int      @default(0) @map("new_users")
-    sessions         Int      @default(0)
-    totalMessages    Int      @default(0) @map("total_messages")
-    userMessages     Int      @default(0) @map("user_messages")
-    botMessages      Int      @default(0) @map("bot_messages")
-    events           Int      @default(0)
-    eventTypes       String?  @map("event_types") @db.Text
-    llmCalls         Int      @default(0) @map("llm_calls")
-    llmErrors        Int      @default(0) @map("llm_errors")
-    llmInputTokens   Int      @default(0) @map("llm_input_tokens")
-    llmOutputTokens  Int      @default(0) @map("llm_output_tokens")
-    llmLatencyMean   Float?   @map("llm_latency_mean")
-    llmCostSum       Float?   @default(0) @map("llm_cost_sum")
-    llmCostMean      Float?   @map("llm_cost_mean")
-    createdAt        DateTime @default(now()) @map("created_at")
+    id                 Int      @id @default(autoincrement())
+    botId              String   @map("bot_id")
+    date               DateTime @db.Date
+    returningUsers     Int      @default(0) @map("returning_users")
+    newUsers           Int      @default(0) @map("new_users")
+    sessions           Int      @default(0)
+    totalMessages      Int      @default(0) @map("total_messages")
+    userMessages       Int      @default(0) @map("user_messages")
+    botMessages        Int      @default(0) @map("bot_messages")
+    events             Int      @default(0)
+    eventTypes         String?  @map("event_types") @db.Text
+    llmCalls           Int      @default(0) @map("llm_calls")
+    llmErrors          Int      @default(0) @map("llm_errors")
+    llmInputTokens     Int      @default(0) @map("llm_input_tokens")
+    llmOutputTokens    Int      @default(0) @map("llm_output_tokens")
+    llmLatencyMean     Float?   @map("llm_latency_mean")
+    llmCostSum         Float?   @default(0) @map("llm_cost_sum")
+    llmCostMean        Float?   @map("llm_cost_mean")
+    hourlyRecordsCount Int      @default(0) @map("hourly_records_count")
+    createdAt          DateTime @default(now()) @map("created_at")
+    syncDate           DateTime @map("sync_date") @db.Date
 
-    @@index([rangeLabel])
-    @@index([startDatetimeUtc])
+    @@index([botId])
+    @@index([date])
+    @@index([syncDate])
     @@map("botpress_analytics")
 }
 
 model ChatbotAnalytics {
-    id                       Int      @id @default(autoincrement())
-    botId                    Int?
+    botId                    Int      @id @default(autoincrement()) @map("bot_id")
     conversationId           String   @unique @map("conversation_id") @db.VarChar(100)
     date                     DateTime @db.Date
     integration              String   @db.VarChar(50)
