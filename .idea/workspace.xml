@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0d34e20a-4e93-440f-a96c-87e45184815c" name="Changes" comment="feat: Add Charts" />
+    <list default="true" id="0d34e20a-4e93-440f-a96c-87e45184815c" name="Changes" comment="feat: Add Demo Data and optimize charts">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -88,7 +91,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1763375694435</updated>
-      <workItem from="1763375695545" duration="677000" />
+      <workItem from="1763375695545" duration="1703000" />
     </task>
     <task id="LOCAL-00003" summary="feat: Change Demo Data">
       <option name="closed" value="true" />
@@ -106,7 +109,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763377406621</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="feat: Add Demo Data and optimize charts">
+      <option name="closed" value="true" />
+      <created>1763386135198</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1763386135198</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -128,7 +139,8 @@
     <MESSAGE value="feat: Add Demo Data" />
     <MESSAGE value="feat: Change Demo Data" />
     <MESSAGE value="feat: Add Charts" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: Add Charts" />
+    <MESSAGE value="feat: Add Demo Data and optimize charts" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: Add Demo Data and optimize charts" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
