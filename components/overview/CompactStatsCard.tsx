@@ -24,3 +24,4 @@ export function CompactStatsCard({ stats }: CompactStatsCardProps) {
   );
 }
 
+

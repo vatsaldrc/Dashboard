@@ -10,3 +10,4 @@ export function ContactChannelChart({ data }: ContactChannelChartProps) {
   return <CategoryBarChart title="Requested Contact Channel" data={data} color="#10b981" />;
 }
 
+

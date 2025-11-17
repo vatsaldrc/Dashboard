@@ -10,3 +10,4 @@ export function CustomerRegionChart({ data }: CustomerRegionChartProps) {
   return <CategoryBarChart title="Customer Region" data={data} color="#ef4444" />;
 }
 
+

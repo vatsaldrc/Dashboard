@@ -33,18 +33,30 @@ npm install
 Erstelle eine `.env` Datei im Root-Verzeichnis mit folgenden Variablen:
 
 ```env
-# Datenbank
-DATABASE_URL="mysql://user:password@localhost:3306/database_name"
+# Database Configuration (für Docker)
+MYSQL_ROOT_PASSWORD=rootpassword
+MYSQL_DATABASE=botpress_db
+MYSQL_USER=botpress_user
+MYSQL_PASSWORD=botpress_password
+MYSQL_PORT=3306
 
-# NextAuth
-NEXTAUTH_SECRET="your-secret-key-here"
+# Application Configuration
+APP_PORT=3000
+NODE_ENV=development
+
+# Prisma Database URL
+# Für lokale Entwicklung (außerhalb Docker):
+DATABASE_URL=mysql://botpress_user:botpress_password@localhost:3306/botpress_db
+# Für Docker (innerhalb Container):
+# DATABASE_URL=mysql://botpress_user:botpress_password@mysql:3306/botpress_db
+
+# NextAuth Configuration
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-here
 
 # Admin Login (erforderlich für Admin-Zugriff)
-ADMIN_EMAIL="admin@example.com"
-ADMIN_PASSWORD="your-secure-password"
-
-# Environment (optional)
-NODE_ENV="development"
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your-secure-password
 ```
 
 ### 4. Prisma Client generieren
@@ -77,20 +89,41 @@ Die Anwendung ist nun unter [http://localhost:3000](http://localhost:3000) errei
 
 ### Erforderliche Variablen
 
-| Variable | Beschreibung | Beispiel |
-|----------|-------------|----------|
-| `DATABASE_URL` | MySQL Connection String | `mysql://user:password@localhost:3306/dbname` |
-| `NEXTAUTH_SECRET` | Secret Key für NextAuth JWT | Mindestens 32 Zeichen, zufälliger String |
-| `ADMIN_EMAIL` | E-Mail-Adresse für Admin-Login | `admin@example.com` |
-| `ADMIN_PASSWORD` | Passwort für Admin-Login | Sicheres Passwort |
+#### Datenbank-Konfiguration
+
+| Variable | Beschreibung | Beispiel | Verwendung |
+|----------|-------------|----------|------------|
+| `DATABASE_URL` | MySQL Connection String für Prisma | `mysql://user:password@localhost:3306/dbname` | Immer erforderlich |
+| `MYSQL_ROOT_PASSWORD` | Root-Passwort für MySQL | `rootpassword` | Docker/MySQL Setup |
+| `MYSQL_DATABASE` | Name der Datenbank | `botpress_db` | Docker/MySQL Setup |
+| `MYSQL_USER` | MySQL Benutzername | `botpress_user` | Docker/MySQL Setup |
+| `MYSQL_PASSWORD` | MySQL Passwort | `botpress_password` | Docker/MySQL Setup |
+| `MYSQL_PORT` | MySQL Port | `3306` | Docker/MySQL Setup |
+
+#### NextAuth-Konfiguration
+
+| Variable | Beschreibung | Beispiel | Verwendung |
+|----------|-------------|----------|------------|
+| `NEXTAUTH_URL` | Base URL der Anwendung | `http://localhost:3000` | Immer erforderlich |
+| `NEXTAUTH_SECRET` | Secret Key für NextAuth JWT | Mindestens 32 Zeichen, zufälliger String | Immer erforderlich |
+
+#### Admin-Login
+
+| Variable | Beschreibung | Beispiel | Verwendung |
+|----------|-------------|----------|------------|
+| `ADMIN_EMAIL` | E-Mail-Adresse für Admin-Login | `admin@example.com` | Immer erforderlich |
+| `ADMIN_PASSWORD` | Passwort für Admin-Login | Sicheres Passwort | Immer erforderlich |
 
 ### Optionale Variablen
 
-| Variable | Beschreibung | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment Mode | `development` |
+| Variable | Beschreibung | Default | Verwendung |
+|----------|-------------|---------|------------|
+| `NODE_ENV` | Environment Mode | `development` | Development/Production |
+| `APP_PORT` | Port für die Anwendung | `3000` | Docker/Server Konfiguration |
 
-### NEXTAUTH_SECRET generieren
+### Wichtige ENV-Variablen Details
+
+#### NEXTAUTH_SECRET generieren
 
 Für Production sollte ein sicherer Secret generiert werden:
 
@@ -99,6 +132,31 @@ openssl rand -base64 32
 ```
 
 Oder online: https://generate-secret.vercel.app/32
+
+#### NEXTAUTH_URL
+
+Die `NEXTAUTH_URL` muss die vollständige Base-URL der Anwendung sein:
+- **Development**: `http://localhost:3000`
+- **Production**: `https://yourdomain.com`
+- **Docker**: `http://localhost:3000` (wenn Port gemappt ist)
+
+#### DATABASE_URL für verschiedene Umgebungen
+
+- **Lokale Entwicklung (außerhalb Docker)**: 
+  ```
+  mysql://botpress_user:botpress_password@localhost:3306/botpress_db
+  ```
+
+- **Docker (innerhalb Container)**:
+  ```
+  mysql://botpress_user:botpress_password@mysql:3306/botpress_db
+  ```
+  (Verwendet den Service-Namen `mysql` aus docker-compose.yml)
+
+- **Remote/Production**:
+  ```
+  mysql://user:password@db.example.com:3306/botpress_db
+  ```
 
 ## Datenbank Setup
 
@@ -148,6 +206,17 @@ docker-compose up -d
 
 Die Anwendung läuft auf Port 3000 (konfigurierbar über `APP_PORT` in `.env`).
 
+**Wichtig**: Stelle sicher, dass alle ENV-Variablen in der `.env` Datei gesetzt sind, insbesondere:
+- `MYSQL_ROOT_PASSWORD`
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `DATABASE_URL` (muss auf `mysql:3306` zeigen, nicht `localhost`)
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+
 #### Stoppen
 
 ```bash
@@ -189,10 +258,13 @@ npm start
 
 ### Production Deployment Checkliste
 
-- [ ] Alle ENV-Variablen sind gesetzt
-- [ ] `NEXTAUTH_SECRET` ist ein sicherer, zufälliger String (mind. 32 Zeichen)
-- [ ] `DATABASE_URL` zeigt auf die Production-Datenbank
-- [ ] `ADMIN_EMAIL` und `ADMIN_PASSWORD` sind gesetzt
+- [ ] Alle ENV-Variablen sind gesetzt:
+  - [ ] `DATABASE_URL` zeigt auf die Production-Datenbank
+  - [ ] `NEXTAUTH_URL` ist die Production-URL (z.B. `https://yourdomain.com`)
+  - [ ] `NEXTAUTH_SECRET` ist ein sicherer, zufälliger String (mind. 32 Zeichen)
+  - [ ] `ADMIN_EMAIL` und `ADMIN_PASSWORD` sind gesetzt
+  - [ ] `MYSQL_*` Variablen (wenn Docker verwendet wird)
+  - [ ] `APP_PORT` (wenn abweichend von 3000)
 - [ ] Prisma Client wurde generiert (`npm run prisma:generate`)
 - [ ] Datenbank-Migrationen wurden ausgeführt (`npx prisma migrate deploy`)
 - [ ] Next.js Build wurde erfolgreich erstellt (`npm run build`)
@@ -263,9 +335,11 @@ Nach dem ersten Login können weitere Admin-User über die Admin-Oberfläche ers
 - Die Datenbank existiert
 - MySQL-Server läuft und erreichbar ist
 
-### Problem: "NEXTAUTH_SECRET is missing"
+### Problem: "NEXTAUTH_SECRET is missing" oder "NEXTAUTH_URL is missing"
 
-**Lösung**: Setze die `NEXTAUTH_SECRET` Umgebungsvariable mit einem sicheren, zufälligen String.
+**Lösung**: 
+- Setze die `NEXTAUTH_SECRET` Umgebungsvariable mit einem sicheren, zufälligen String
+- Setze die `NEXTAUTH_URL` auf die vollständige Base-URL der Anwendung (z.B. `http://localhost:3000` oder `https://yourdomain.com`)
 
 ### Problem: "Admin Login funktioniert nicht"
 
@@ -276,7 +350,11 @@ Nach dem ersten Login können weitere Admin-User über die Admin-Oberfläche ers
 **Lösung**: 
 - Überprüfe die Logs: `docker-compose logs`
 - Stelle sicher, dass MySQL-Container läuft: `docker-compose ps`
-- Überprüfe die `.env` Datei auf korrekte Werte
+- Überprüfe die `.env` Datei auf korrekte Werte:
+  - Alle `MYSQL_*` Variablen müssen gesetzt sein
+  - `DATABASE_URL` muss auf `mysql:3306` zeigen (nicht `localhost`)
+  - `NEXTAUTH_URL` muss gesetzt sein
+  - `NEXTAUTH_SECRET` muss gesetzt sein
 
 ### Problem: "Migrationen schlagen fehl"
 

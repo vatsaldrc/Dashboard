@@ -24,3 +24,4 @@ export function StatsOverviewCard({ avgMessageLength, personalContactRequested }
   );
 }
 
+
