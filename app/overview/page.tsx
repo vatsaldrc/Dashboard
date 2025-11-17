@@ -12,9 +12,8 @@ import { SessionsChart } from '@/components/overview/SessionsChart';
 import { TotalMessagesChart } from '@/components/overview/TotalMessagesChart';
 import { UserMessagesChart } from '@/components/overview/UserMessagesChart';
 import { BotMessagesChart } from '@/components/overview/BotMessagesChart';
-import { AvgMessageLengthCard } from '@/components/overview/AvgMessageLengthCard';
+import { StatsOverviewCard } from '@/components/overview/StatsOverviewCard';
 import { SentimentChart } from '@/components/overview/SentimentChart';
-import { PersonalContactChart } from '@/components/overview/PersonalContactChart';
 import { ContactChannelChart } from '@/components/overview/ContactChannelChart';
 import { CustomerTypeChart } from '@/components/overview/CustomerTypeChart';
 import { CustomerRegionChart } from '@/components/overview/CustomerRegionChart';
@@ -187,9 +186,11 @@ export default function OverviewPage() {
               total={data.totals.botMessages}
               dataByDate={data.botpressByDate}
             />
-            <AvgMessageLengthCard total={data.totals.avgMessageLength} />
+            <StatsOverviewCard
+              avgMessageLength={data.totals.avgMessageLength}
+              personalContactRequested={data.totals.personalContactRequested}
+            />
             <SentimentChart data={data.sentimentCounts} />
-            <PersonalContactChart total={data.totals.personalContactRequested} />
             <ContactChannelChart data={data.contactChannelCounts} />
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />

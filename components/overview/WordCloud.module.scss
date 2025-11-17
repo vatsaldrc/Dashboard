@@ -49,21 +49,27 @@
   gap: var(--spacing-sm);
   align-items: center;
   justify-content: center;
+  align-content: center;
   padding: var(--spacing-md);
   min-height: 400px;
+  position: relative;
 }
 
 .fallbackWord {
   display: inline-block;
   padding: var(--spacing-xs) var(--spacing-sm);
   margin: var(--spacing-xs);
-  color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
-  opacity: 0.8;
-  transition: opacity var(--transition-base);
+  opacity: 0.9;
+  transition: all var(--transition-base);
+  cursor: default;
+  transform-origin: center;
 
   &:hover {
     opacity: 1;
+    transform: scale(1.1) !important;
+    z-index: 1;
+    position: relative;
   }
 }
 
