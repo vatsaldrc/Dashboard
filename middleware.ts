@@ -10,12 +10,12 @@ export default withAuth(
     // Admin-Routen nur für ADMIN
     if (path.startsWith('/admin')) {
       if (token?.role !== Role.ADMIN) {
-        return NextResponse.redirect(new URL('/demo', req.url));
+        return NextResponse.redirect(new URL('/overview', req.url));
       }
     }
 
-    // Demo-Route nur für eingeloggte User
-    if (path.startsWith('/demo')) {
+    // Overview-Route nur für eingeloggte User
+    if (path.startsWith('/overview')) {
       if (!token) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
@@ -38,8 +38,8 @@ export default withAuth(
           return !!token;
         }
 
-        // Demo-Route benötigt Token
-        if (path.startsWith('/demo')) {
+        // Overview-Route benötigt Token
+        if (path.startsWith('/overview')) {
           return !!token;
         }
 
@@ -55,6 +55,6 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/admin/:path*', '/demo/:path*', '/login'],
+  matcher: ['/admin/:path*', '/overview/:path*', '/login'],
 };
 
