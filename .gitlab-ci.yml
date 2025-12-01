@@ -1,0 +1,42 @@
+stages:
+  - build
+  # - deploy
+
+variables:
+  IMAGE_NAME: docker.ryze-digital.de/ryze-digital/ai-products/chatbot-botpress-dashboard
+  IMAGE_TAGGED: "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+  IMAGE_LATEST: "$IMAGE_NAME:latest"
+  TZ: Europe/Berlin
+  LOG_LEVEL: INFO
+  MYSQL_HOST: $MYSQL_HOST
+  MYSQL_USER: $MYSQL_USER
+  MYSQL_PASSWORD: $MYSQL_PASSWORD
+  MYSQL_DATABASE: $MYSQL_DATABASE
+
+before_script:
+  - echo "Starting CI/CD pipeline for botpress dashboard..."
+
+# -------------------
+# Build & Push Docker
+# -------------------
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+  script:
+    # Login to registry
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+    # Build Docker image from Dockerfile
+    - docker build -t $IMAGE_TAGGED --target runner .
+    - docker tag $IMAGE_TAGGED $IMAGE_LATEST
+
+    # Push both tags
+    - docker push $IMAGE_TAGGED
+    - docker push $IMAGE_LATEST
+
+    - echo "Build and push completed successfully"
