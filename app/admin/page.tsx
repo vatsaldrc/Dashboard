@@ -28,6 +28,13 @@ export default async function AdminDashboard() {
     },
   });
 
+  // Serialize dates to strings for client component
+  const serializedUsers = users.map(user => ({
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
+  }));
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -42,7 +49,7 @@ export default async function AdminDashboard() {
 
       <main className={styles.main}>
         <div className={styles.content}>
-          <UserList initialUsers={users} />
+          <UserList initialUsers={serializedUsers} />
         </div>
       </main>
     </div>
