@@ -138,7 +138,7 @@ export default function OverviewPage() {
               <label className={styles.label}>Von Datum:</label>
               <DatePicker
                 selected={fromDate}
-                onChange={(date: Date) => setFromDate(date)}
+                onChange={(date: Date | null) => date && setFromDate(date)}
                 selectsStart
                 startDate={fromDate}
                 endDate={toDate}
@@ -150,7 +150,7 @@ export default function OverviewPage() {
               <label className={styles.label}>Bis Datum:</label>
               <DatePicker
                 selected={toDate}
-                onChange={(date: Date) => setToDate(date)}
+                onChange={(date: Date | null) => date && setToDate(date)}
                 selectsEnd
                 startDate={fromDate}
                 endDate={toDate}
