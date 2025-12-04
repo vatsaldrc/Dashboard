@@ -1,6 +1,6 @@
 stages:
   - build
-  # - deploy
+  - deploy
 
 variables:
   IMAGE_NAME: docker.ryze-digital.de/ryze-digital/ai-products/chatbot-botpress-dashboard
@@ -19,6 +19,7 @@ before_script:
 # -------------------
 # Build & Push Docker
 # -------------------
+# Build for main/master branch
 build:
   stage: build
   image: docker:24.0.5
@@ -40,3 +41,51 @@ build:
     - docker push $IMAGE_LATEST
 
     - echo "Build and push completed successfully"
+
+# Build for development branch (separate from main)
+build:dev:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "development"'
+      when: always
+  script:
+    # Login to registry
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+    # Build Docker image with dev tag
+    - docker build -t $IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA --target runner .
+    - docker tag $IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA $IMAGE_NAME:dev-latest
+
+    # Push dev tags
+    - docker push $IMAGE_NAME:dev-$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_NAME:dev-latest
+
+    - echo "Development build and push completed successfully"
+
+# Deploy to development server
+deploy:dev:
+  stage: deploy
+  image: alpine:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "development"'
+      when: always
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEV_SERVER_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to development server..."
+    - |
+      ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << 'EOF'
+        cd /path/to/your/app
+        docker pull $IMAGE_NAME:dev-latest
+        docker-compose down
+        docker-compose up -d
+        echo "Development deployment completed!"
+      EOF
