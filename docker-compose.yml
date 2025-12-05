@@ -32,6 +32,9 @@ services:
     environment:
       DATABASE_URL: mysql://${MYSQL_USER:-botpress_user}:${MYSQL_PASSWORD:-botpress_password}@mysql:3306/${MYSQL_DATABASE:-botpress_db}
       NODE_ENV: ${NODE_ENV:-development}
+      VIRTUAL_HOST: web-bot-analytics.ai.ryze-cloud.de
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: web-bot-analytics.ai.ryze-cloud.de
     depends_on:
       mysql:
         condition: service_healthy
@@ -41,6 +44,13 @@ services:
       - /app/.next
     networks:
       - botpress_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`web-bot-analytics.ai.ryze-cloud.de`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
 
 volumes:
   mysql_data:
