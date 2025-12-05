@@ -3,7 +3,7 @@ stages:
   # - deploy
 
 variables:
-  IMAGE_NAME: docker.ryze-digital.de/ryze-digital/ai-products/chatbot-botpress-dashboard
+  IMAGE_NAME: docker.ryze-digital.de/botpress/dashboard
   IMAGE_TAGGED: "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
   IMAGE_LATEST: "$IMAGE_NAME:latest"
   IMAGE_LATEST_DEV: "$IMAGE_NAME:latest-dev"
