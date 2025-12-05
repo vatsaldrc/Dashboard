@@ -1,61 +1,33 @@
+version: '3.8'
+
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: botpress_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-botpress_db}
-      MYSQL_USER: ${MYSQL_USER:-botpress_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-botpress_password}
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - botpress_network
-
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: botpress_app
-    restart: unless-stopped
+    image: docker.ryze-digital.de/botpress/dashboard:latest-dev
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dashboard.rule=Host(`web-bot-analytics.ai.ryze-cloud.de`)"
+        - "traefik.http.routers.dashboard.entrypoints=websecure"
+        - "traefik.http.routers.dashboard.tls=true"
+        - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+        - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "3000:3000"
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-botpress_user}:${MYSQL_PASSWORD:-botpress_password}@mysql:3306/${MYSQL_DATABASE:-botpress_db}
-      NODE_ENV: ${NODE_ENV:-development}
-      VIRTUAL_HOST: web-bot-analytics.ai.ryze-cloud.de
-      VIRTUAL_PORT: 3000
-      LETSENCRYPT_HOST: web-bot-analytics.ai.ryze-cloud.de
-    depends_on:
-      mysql:
-        condition: service_healthy
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+      DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
+      NODE_ENV: "production"
+      NEXTAUTH_URL: "${NEXTAUTH_URL}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
     networks:
       - botpress_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`web-bot-analytics.ai.ryze-cloud.de`)"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
-
-volumes:
-  mysql_data:
 
 networks:
   botpress_network:
-    driver: bridge
+    driver: overlay
+    attachable: true
 
