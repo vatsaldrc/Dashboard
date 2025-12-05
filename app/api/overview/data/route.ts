@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const fromDateOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     const toDateOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
-    // Fetch BotpressAnalytics data
-    const botpressData = await prisma.botpressAnalytics.findMany({
+    // Fetch Botpress API analytics data
+    const botpressData = await prisma.botpressApiAnalytics.findMany({
       where: {
         date: {
           gte: fromDateOnly,
@@ -45,8 +45,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Aggregate BotpressAnalytics by date
-    const botpressByDate = botpressData.reduce((acc, item) => {
+    // Aggregate Botpress API analytics by date
+    const botpressByDate = botpressData.reduce<Record<string, {
+      date: string;
+      returningUsers: number;
+      newUsers: number;
+      sessions: number;
+      totalMessages: number;
+      userMessages: number;
+      botMessages: number;
+    }>>((acc, item) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
@@ -69,7 +77,11 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any>);
 
     // Aggregate ChatbotAnalytics
-    const chatbotByDate = chatbotData.reduce((acc, item) => {
+    const chatbotByDate = chatbotData.reduce<Record<string, {
+      date: string;
+      avgMessageLength: number;
+      count: number;
+    }>>((acc, item) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
@@ -141,7 +153,7 @@ export async function GET(request: NextRequest) {
           if (Array.isArray(keywords)) {
             allKeywords.push(...keywords);
           } else if (typeof keywords === 'object') {
-            Object.keys(keywords).forEach((key) => {
+            Object.keys(keywords as Record<string, unknown>).forEach((key: string) => {
               allKeywords.push(key);
             });
           } else if (typeof keywords === 'string') {
@@ -149,8 +161,11 @@ export async function GET(request: NextRequest) {
           }
         } catch {
           // If not JSON, treat as comma-separated string
-          const keywords = item.keywords.split(',').map((k) => k.trim()).filter((k) => k);
-          allKeywords.push(...keywords);
+          const fallbackKeywords = String(item.keywords)
+            .split(',')
+            .map((k: string) => k.trim())
+            .filter((k: string) => k.length > 0);
+          allKeywords.push(...fallbackKeywords);
         }
       }
     });
@@ -174,7 +189,7 @@ export async function GET(request: NextRequest) {
       .map((item) => ({
         conversationId: item.conversationId,
         summary: item.summary,
-        createdAt: item.createdAt,
+        createdAt: item.syncDate,
       }))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 

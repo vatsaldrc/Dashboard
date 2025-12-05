@@ -14,8 +14,6 @@ services:
         - "traefik.http.routers.dashboard.tls=true"
         - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
         - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
-    ports:
-      - "3000:3000"
     environment:
       DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}"
       NODE_ENV: "production"
@@ -30,4 +28,3 @@ networks:
   botpress_network:
     driver: overlay
     attachable: true
-

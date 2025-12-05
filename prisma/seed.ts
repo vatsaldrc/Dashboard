@@ -1,14 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function seedBotpressAnalytics() {
-  console.log('🌱 Starte BotpressAnalytics Seed-Prozess...');
+async function seedBotpressApiAnalytics() {
+  console.log('🌱 Starte Botpress API Analytics Seed-Prozess...');
 
   // Lösche vorhandene Analytics-Daten
   // @ts-ignore - Model könnte noch nicht im generierten Client sein
-  await prisma.botpressAnalytics.deleteMany({});
-  console.log('✅ Vorhandene BotpressAnalytics-Daten gelöscht');
+  await prisma.botpressApiAnalytics.deleteMany({});
+  console.log('✅ Vorhandene Botpress API Analytics-Daten gelöscht');
 
   // Erstelle Demodaten basierend auf dem Schema
   const analyticsData = [
@@ -457,7 +457,7 @@ async function seedBotpressAnalytics() {
   // Füge Daten zur Datenbank hinzu
   for (const data of analyticsData) {
     // @ts-ignore - Model könnte noch nicht im generierten Client sein
-    await prisma.botpressAnalytics.create({
+    await prisma.botpressApiAnalytics.create({
       data,
     });
     console.log(`✅ Bot ${data.botId} - ${data.date.toISOString().split('T')[0]} Daten erstellt`);
@@ -840,9 +840,21 @@ async function seedChatbotAnalytics() {
 
   // Füge Daten zur Datenbank hinzu
   for (const data of conversationsData) {
-    // @ts-ignore
+    const {
+      botId = 'demo-bot',
+      createdAt,
+      syncDate,
+      ...rest
+    } = data as Record<string, any>;
+
+    const payload = {
+      botId,
+      syncDate: syncDate ?? data.date,
+      ...rest,
+    } as Prisma.ChatbotAnalyticsCreateInput;
+
     await prisma.chatbotAnalytics.create({
-      data,
+      data: payload,
     });
     console.log(`✅ ${data.conversationId} Daten erstellt`);
   }
@@ -851,7 +863,7 @@ async function seedChatbotAnalytics() {
 }
 
 async function main() {
-  await seedBotpressAnalytics();
+  await seedBotpressApiAnalytics();
   await seedChatbotAnalytics();
 }
 

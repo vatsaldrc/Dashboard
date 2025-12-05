@@ -25,55 +25,55 @@ model User {
     updatedAt DateTime @updatedAt
 }
 
-model BotpressAnalytics {
-    id                 Int      @id @default(autoincrement())
-    botId              String   @map("bot_id")
+model BotpressApiAnalytics {
+    id                 Int     @id @default(autoincrement())
+    botId              String  @map("bot_id")
     date               DateTime @db.Date
-    returningUsers     Int      @default(0) @map("returning_users")
-    newUsers           Int      @default(0) @map("new_users")
-    sessions           Int      @default(0)
-    totalMessages      Int      @default(0) @map("total_messages")
-    userMessages       Int      @default(0) @map("user_messages")
-    botMessages        Int      @default(0) @map("bot_messages")
-    events             Int      @default(0)
-    eventTypes         String?  @map("event_types") @db.Text
-    llmCalls           Int      @default(0) @map("llm_calls")
-    llmErrors          Int      @default(0) @map("llm_errors")
-    llmInputTokens     Int      @default(0) @map("llm_input_tokens")
-    llmOutputTokens    Int      @default(0) @map("llm_output_tokens")
-    llmLatencyMean     Float?   @map("llm_latency_mean")
-    llmCostSum         Float?   @default(0) @map("llm_cost_sum")
-    llmCostMean        Float?   @map("llm_cost_mean")
-    hourlyRecordsCount Int      @default(0) @map("hourly_records_count")
-    createdAt          DateTime @default(now()) @map("created_at")
+    returningUsers     Int     @default(0) @map("returning_users")
+    newUsers           Int     @default(0) @map("new_users")
+    sessions           Int     @default(0)
+    totalMessages      Int     @default(0) @map("total_messages")
+    userMessages       Int     @default(0) @map("user_messages")
+    botMessages        Int     @default(0) @map("bot_messages")
+    events             Int     @default(0)
+    eventTypes         Json?   @map("event_types")
+    llmCalls           Int     @default(0) @map("llm_calls")
+    llmErrors          Int     @default(0) @map("llm_errors")
+    llmInputTokens     Int     @default(0) @map("llm_input_tokens")
+    llmOutputTokens    Int     @default(0) @map("llm_output_tokens")
+    llmLatencyMean     Float?  @map("llm_latency_mean")
+    llmCostSum         Float?  @default(0) @map("llm_cost_sum")
+    llmCostMean        Float?  @map("llm_cost_mean")
+    hourlyRecordsCount Int     @default(0) @map("hourly_records_count")
     syncDate           DateTime @map("sync_date") @db.Date
 
     @@index([botId])
     @@index([date])
     @@index([syncDate])
-    @@map("botpress_analytics")
+    @@map("botpress_api_analytics")
 }
 
 model ChatbotAnalytics {
-    botId                    Int      @id @default(autoincrement()) @map("bot_id")
-    conversationId           String   @unique @map("conversation_id") @db.VarChar(100)
-    date                     DateTime @db.Date
-    integration              String   @db.VarChar(50)
-    totalMessages            Int      @default(0) @map("total_messages")
-    userMessages             Int      @default(0) @map("user_messages")
-    botMessages              Int      @default(0) @map("bot_messages")
-    avgMessageLength         Float?   @map("avg_message_length")
-    sentiment                String?  @db.VarChar(20)
-    keywords                 String?  @db.Text
-    tags                     String?  @db.Text
-    summary                  String?  @db.Text
-    personalContactRequested Int      @default(0) @map("personal_contact_requested")
-    requestedContactChannel  String?  @map("requested_contact_channel") @db.VarChar(50)
-    customerType             String?  @map("customer_type") @db.VarChar(50)
-    customerRegion           String?  @map("customer_region") @db.VarChar(20)
-    createdAt                DateTime @default(now()) @map("created_at")
+    id                        Int     @id @default(autoincrement())
+    botId                     String  @map("bot_id")
+    conversationId            String  @map("conversation_id") @db.VarChar(255)
+    date                      DateTime @db.Date
+    integration               String  @db.VarChar(255)
+    totalMessages             Int     @default(0) @map("total_messages")
+    userMessages              Int     @default(0) @map("user_messages")
+    botMessages               Int     @default(0) @map("bot_messages")
+    avgMessageLength          Float?  @map("avg_message_length")
+    sentiment                 String? @db.VarChar(20)
+    keywords                  Json?   @map("keywords")
+    tags                      Json?   @map("tags")
+    summary                   String? @db.Text
+    personalContactRequested  Int     @default(0) @map("personal_contact_requested")
+    requestedContactChannel   String? @map("requested_contact_channel") @db.VarChar(50)
+    customerType              String? @map("customer_type") @db.VarChar(50)
+    customerRegion            String? @map("customer_region") @db.VarChar(50)
+    syncDate                  DateTime @map("sync_date") @db.Date
 
-    @@index([conversationId])
+    @@index([botId])
     @@index([date])
     @@index([integration])
     @@map("chatbot_analytics")
