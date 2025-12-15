@@ -70,4 +70,4 @@ build:dev:
     - docker push $IMAGE_TAGGED
     - docker push $IMAGE_LATEST_DEV
 
-    - echo "Build and push for development completed successfully"
+    - echo "Build and push for development completed successfullys"
