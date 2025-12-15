@@ -51,9 +51,12 @@
   justify-content: center;
   align-content: center;
   padding: var(--spacing-md);
-  min-height: 400px;
+  max-height: 400px;
   position: relative;
+  overflow: auto;
+  padding-top: 100px;
 }
+
 
 .fallbackWord {
   display: inline-block;
