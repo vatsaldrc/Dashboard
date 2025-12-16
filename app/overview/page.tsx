@@ -162,10 +162,10 @@ export default function OverviewPage() {
           </div>
 
           <div className={styles.chartsGrid}>
-            <ReturningUsersChart
-              total={data.totals.returningUsers}
-              dataByDate={data.botpressByDate}
-            />
+            // <ReturningUsersChart
+            //   total={data.totals.returningUsers}
+            //   dataByDate={data.botpressByDate}
+            // />
             <NewUsersChart
               total={data.totals.newUsers}
               dataByDate={data.botpressByDate}
