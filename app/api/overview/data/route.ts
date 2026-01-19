@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
       date: string;
       avgMessageLength: number;
       count: number;
+      personalContactRequested: number;
     }>>((acc, item) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
@@ -88,12 +89,14 @@ export async function GET(request: NextRequest) {
           date: dateKey,
           avgMessageLength: 0,
           count: 0,
+          personalContactRequested: 0,
         };
       }
       if (item.avgMessageLength) {
         acc[dateKey].avgMessageLength += item.avgMessageLength;
         acc[dateKey].count += 1;
       }
+      acc[dateKey].personalContactRequested += item.personalContactRequested;
       return acc;
     }, {} as Record<string, any>);
 
@@ -196,6 +199,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       botpressByDate: Object.values(botpressByDate),
       chatbotByDate: Object.values(chatbotByDate),
+      personalContactRequestedByDate: Object.values(chatbotByDate).map((item) => ({
+        date: item.date,
+        personalContactRequested: item.personalContactRequested,
+      })),
       totals: {
         returningUsers: botpressData.reduce((sum, item) => sum + item.returningUsers, 0),
         newUsers: botpressData.reduce((sum, item) => sum + item.newUsers, 0),

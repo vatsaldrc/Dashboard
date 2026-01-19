@@ -12,6 +12,7 @@ import { SessionsChart } from '@/components/overview/SessionsChart';
 // import { TotalMessagesChart } from '@/components/overview/TotalMessagesChart';
 import { UserMessagesChart } from '@/components/overview/UserMessagesChart';
 // import { BotMessagesChart } from '@/components/overview/BotMessagesChart';
+import { PersonalContactRequestsChart } from '@/components/overview/PersonalContactRequestsChart';
 import { StatsOverviewCard } from '@/components/overview/StatsOverviewCard';
 import { SentimentChart } from '@/components/overview/SentimentChart';
 import { ContactChannelChart } from '@/components/overview/ContactChannelChart';
@@ -34,6 +35,10 @@ interface OverviewData {
   chatbotByDate: Array<{
     date: string;
     avgMessageLength: number;
+  }>;
+  personalContactRequestedByDate: Array<{
+    date: string;
+    personalContactRequested: number;
   }>;
   totals: {
     returningUsers: number;
@@ -182,6 +187,10 @@ export default function OverviewPage() {
               total={data.totals.botMessages}
               dataByDate={data.botpressByDate}
             /> */}
+            <PersonalContactRequestsChart
+              total={data.totals.personalContactRequested}
+              dataByDate={data.personalContactRequestedByDate}
+            />
             <StatsOverviewCard
               avgMessageLength={data.totals.avgMessageLength}
               personalContactRequested={data.totals.personalContactRequested}
