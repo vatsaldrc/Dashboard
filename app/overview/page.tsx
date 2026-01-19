@@ -9,9 +9,9 @@ import { SignOutButton } from '@/components/ui/SignOutButton/SignOutButton';
 import { ReturningUsersChart } from '@/components/overview/ReturningUsersChart';
 import { NewUsersChart } from '@/components/overview/NewUsersChart';
 import { SessionsChart } from '@/components/overview/SessionsChart';
-import { TotalMessagesChart } from '@/components/overview/TotalMessagesChart';
+// import { TotalMessagesChart } from '@/components/overview/TotalMessagesChart';
 import { UserMessagesChart } from '@/components/overview/UserMessagesChart';
-import { BotMessagesChart } from '@/components/overview/BotMessagesChart';
+// import { BotMessagesChart } from '@/components/overview/BotMessagesChart';
 import { StatsOverviewCard } from '@/components/overview/StatsOverviewCard';
 import { SentimentChart } from '@/components/overview/SentimentChart';
 import { ContactChannelChart } from '@/components/overview/ContactChannelChart';
@@ -170,18 +170,18 @@ export default function OverviewPage() {
               total={data.totals.sessions}
               dataByDate={data.botpressByDate}
             />
-            <TotalMessagesChart
+            {/* <TotalMessagesChart
               total={data.totals.totalMessages}
               dataByDate={data.botpressByDate}
-            />
+            /> */}
             <UserMessagesChart
               total={data.totals.userMessages}
               dataByDate={data.botpressByDate}
             />
-            <BotMessagesChart
+            {/* <BotMessagesChart
               total={data.totals.botMessages}
               dataByDate={data.botpressByDate}
-            />
+            /> */}
             <StatsOverviewCard
               avgMessageLength={data.totals.avgMessageLength}
               personalContactRequested={data.totals.personalContactRequested}
