@@ -27,7 +27,7 @@ export function SummaryList({ summaries }: SummaryListProps) {
   if (!summaries || summaries.length === 0) {
     return (
       <div className={styles.container}>
-        <h3 className={styles.title}>Summaries</h3>
+        <h3 className={styles.title}>Zusammenfassung der Konversationen</h3>
         <p className={styles.empty}>Keine Summaries vorhanden</p>
       </div>
     );
@@ -35,7 +35,7 @@ export function SummaryList({ summaries }: SummaryListProps) {
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>Summaries</h3>
+      <h3 className={styles.title}>Zusammenfassung der Konversationen</h3>
       <div className={styles.list}>
         {summaries.map((item, index) => (
           <div key={index} className={styles.item}>

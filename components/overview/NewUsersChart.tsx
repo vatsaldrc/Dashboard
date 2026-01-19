@@ -14,7 +14,7 @@ export function NewUsersChart({ total, dataByDate }: NewUsersChartProps) {
   }));
 
   return (
-    <BarChart title="New Users pro Tag" data={chartData} color="#10b981" total={total} />
+    <BarChart title="Anzahl User" data={chartData} color="#10b981" total={total} />
   );
 }
 

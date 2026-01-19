@@ -14,7 +14,7 @@ export function UserMessagesChart({ total, dataByDate }: UserMessagesChartProps)
   }));
 
   return (
-    <BarChart title="User Messages pro Tag" data={chartData} color="#ef4444" total={total} />
+    <BarChart title="Anzahl User Nachrichten" data={chartData} color="#ef4444" total={total} />
   );
 }
 

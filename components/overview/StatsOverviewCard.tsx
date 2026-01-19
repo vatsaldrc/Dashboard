@@ -16,7 +16,7 @@ export function StatsOverviewCard({ avgMessageLength, personalContactRequested }
           value: avgMessageLength.toFixed(2),
         },
         {
-          title: 'Personal Contact Requested',
+          title: 'Anzahl Beratungsgesuche',
           value: personalContactRequested,
         },
       ]}

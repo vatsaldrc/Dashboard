@@ -7,7 +7,7 @@ interface CustomerTypeChartProps {
 }
 
 export function CustomerTypeChart({ data }: CustomerTypeChartProps) {
-  return <CategoryBarChart title="Customer Type" data={data} color="#f59e0b" />;
+  return <CategoryBarChart title="Kundenkategorie" data={data} color="#f59e0b" />;
 }
 
 

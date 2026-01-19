@@ -7,7 +7,7 @@ interface PersonalContactChartProps {
 }
 
 export function PersonalContactChart({ total }: PersonalContactChartProps) {
-  return <StatCard title="Personal Contact Requested" value={total} />;
+  return <StatCard title="Anzahl Beratungsgesuche" value={total} />;
 }
 
 

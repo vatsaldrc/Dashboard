@@ -14,7 +14,7 @@ export function SessionsChart({ total, dataByDate }: SessionsChartProps) {
   }));
 
   return (
-    <BarChart title="Sessions pro Tag" data={chartData} color="#8b5cf6" total={total} />
+    <BarChart title="Anzahl Konversationen" data={chartData} color="#8b5cf6" total={total} />
   );
 }
 

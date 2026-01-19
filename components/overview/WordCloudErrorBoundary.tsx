@@ -53,7 +53,7 @@ export class WordCloudErrorBoundary extends Component<Props, State> {
 
       return (
         <div className={styles.container}>
-          <h3 className={styles.title}>Keywords Word Cloud</h3>
+          <h3 className={styles.title}>Word Cloud</h3>
           <div className={styles.wordCloudWrapper}>
             <div className={styles.fallbackCloud}>
               {shuffledWords.map((word, index) => {

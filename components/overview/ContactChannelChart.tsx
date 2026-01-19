@@ -7,7 +7,7 @@ interface ContactChannelChartProps {
 }
 
 export function ContactChannelChart({ data }: ContactChannelChartProps) {
-  return <CategoryBarChart title="Requested Contact Channel" data={data} color="#10b981" />;
+  return <CategoryBarChart title="Präferierte Kontaktkanäle" data={data} color="#10b981" />;
 }
 
 

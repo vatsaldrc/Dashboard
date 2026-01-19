@@ -37,7 +37,7 @@ function WordCloudContent({ words }: WordCloudProps) {
   if (!words || words.length === 0 || validWords.length === 0) {
     return (
       <div className={styles.container}>
-        <h3 className={styles.title}>Keywords Word Cloud</h3>
+        <h3 className={styles.title}>Word Cloud</h3>
         <p className={styles.empty}>Keine Keywords vorhanden</p>
       </div>
     );
@@ -56,7 +56,7 @@ function WordCloudContent({ words }: WordCloudProps) {
   if (!mounted) {
     return (
       <div className={styles.container}>
-        <h3 className={styles.title}>Keywords Word Cloud</h3>
+        <h3 className={styles.title}>Word Cloud</h3>
         <div className={styles.wordCloudWrapper}>
           <div className={styles.loading}>Lade Word Cloud...</div>
         </div>
@@ -66,7 +66,7 @@ function WordCloudContent({ words }: WordCloudProps) {
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>Keywords Word Cloud</h3>
+      <h3 className={styles.title}>Word Cloud</h3>
       <div className={styles.wordCloudWrapper}>
         <ReactWordcloud words={validWords} options={options} />
       </div>
