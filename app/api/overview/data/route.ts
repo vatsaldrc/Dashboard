@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { mapPostalCodeToRegion } from '@/lib/plz-mapping';
 
 export async function GET(request: NextRequest) {
   try {
@@ -131,10 +132,11 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Aggregate customer_region
+    // Aggregate customer_region with postal code mapping
     const customerRegionCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerRegion) {
-        acc[item.customerRegion] = (acc[item.customerRegion] || 0) + 1;
+        const regionName = mapPostalCodeToRegion(item.customerRegion);
+        acc[regionName] = (acc[regionName] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
