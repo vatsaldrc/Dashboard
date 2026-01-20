@@ -78,3 +78,13 @@ model ChatbotAnalytics {
     @@index([integration])
     @@map("chatbot_analytics")
 }
+
+model PostalMP {
+    id          Int     @id @default(autoincrement())
+    postalCode  String  @unique @map("Postal Code") @db.VarChar(10)
+    mp          String  @map("mp") @db.VarChar(50)
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    @@map("postal_mp")
+}

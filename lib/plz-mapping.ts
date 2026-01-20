@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { prisma } from './prisma';
 
 interface PLZMapping {
   [postalCode: string]: string;
@@ -7,43 +6,31 @@ interface PLZMapping {
 
 let plzCache: PLZMapping | null = null;
 
-export function getPLZMapping(): PLZMapping {
+export async function getPLZMapping(): Promise<PLZMapping> {
   if (plzCache) {
     return plzCache;
   }
 
-  const csvPath = path.join(process.cwd(), 'prisma', 'PLZ_Liste_20250801(PLZ-Gebiete).csv');
-  
   try {
-    const fileContent = fs.readFileSync(csvPath, 'utf-8');
-    const lines = fileContent.trim().split('\n');
+    const postalMappings = await prisma.postalMP.findMany();
     
     plzCache = {};
-    
-    // Skip header line
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',').map(col => col.trim());
-      if (parts.length >= 2) {
-        const postalCode = parts[0];
-        const region = parts[1];
-        if (postalCode && region) {
-          plzCache[postalCode] = region;
-        }
-      }
+    for (const item of postalMappings) {
+      plzCache[item.postalCode] = item.mp;
     }
     
-    console.log(`[PLZ Mapping] Loaded ${Object.keys(plzCache).length} postal code mappings`);
+    console.log(`[PLZ Mapping] Loaded ${Object.keys(plzCache).length} postal code mappings from database`);
     return plzCache;
   } catch (error) {
-    console.error('[PLZ Mapping] Error loading PLZ mapping:', error);
+    console.error('[PLZ Mapping] Error loading PLZ mapping from database:', error);
     return {};
   }
 }
 
-export function mapPostalCodeToRegion(postalCode: string | null): string {
+export async function mapPostalCodeToRegion(postalCode: string | null): Promise<string> {
   if (!postalCode) return 'Unknown';
   
-  const mapping = getPLZMapping();
+  const mapping = await getPLZMapping();
   const region = mapping[postalCode];
   
   if (region) {
@@ -53,4 +40,9 @@ export function mapPostalCodeToRegion(postalCode: string | null): string {
   // If postal code not found, return it as is so we can see what's missing
   console.warn(`[PLZ Mapping] Postal code not found in mapping: ${postalCode}`);
   return postalCode;
+}
+
+// Clear cache function for testing
+export function clearPLZCache(): void {
+  plzCache = null;
 }
