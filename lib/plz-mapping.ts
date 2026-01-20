@@ -17,7 +17,11 @@ export async function getPLZMapping(): Promise<PLZMapping> {
     
     plzCache = {};
     for (const item of postalMappings) {
-      plzCache[item.postalCode] = item.mp;
+      // Prisma converts snake_case DB column names to camelCase, so 'Postal Code' becomes 'postalCode'
+      const postalCode = (item as any).postalCode || (item as any)['Postal Code'];
+      if (postalCode && item.mp) {
+        plzCache[postalCode] = item.mp;
+      }
     }
     
     console.log(`[PLZ Mapping] Loaded ${Object.keys(plzCache).length} postal code mappings from database`);
