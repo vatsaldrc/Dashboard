@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Aggregate Botpress API analytics by date
-    const botpressByDate = botpressData.reduce<Record<string, {
+    const botpressByDate: Record<string, {
       date: string;
       returningUsers: number;
       newUsers: number;
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       totalMessages: number;
       userMessages: number;
       botMessages: number;
-    }>>((acc, item) => {
+    }> = botpressData.reduce((acc: Record<string, any>, item: any) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
@@ -77,12 +77,12 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any>);
 
     // Aggregate ChatbotAnalytics
-    const chatbotByDate = chatbotData.reduce<Record<string, {
+    const chatbotByDate: Record<string, {
       date: string;
       avgMessageLength: number;
       count: number;
       personalContactRequested: number;
-    }>>((acc, item) => {
+    }> = chatbotData.reduce((acc: Record<string, any>, item: any) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Aggregate sentiment
-    const sentimentCounts = chatbotData.reduce((acc, item) => {
+    const sentimentCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
       if (item.sentiment) {
         acc[item.sentiment] = (acc[item.sentiment] || 0) + 1;
       }
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Aggregate requested_contact_channel
-    const contactChannelCounts = chatbotData.reduce((acc, item) => {
+    const contactChannelCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
       if (item.requestedContactChannel) {
         acc[item.requestedContactChannel] = (acc[item.requestedContactChannel] || 0) + 1;
       }
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Aggregate customer_type
-    const customerTypeCounts = chatbotData.reduce((acc, item) => {
+    const customerTypeCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerType) {
         acc[item.customerType] = (acc[item.customerType] || 0) + 1;
       }
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Aggregate customer_region
-    const customerRegionCounts = chatbotData.reduce((acc, item) => {
+    const customerRegionCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerRegion) {
         acc[item.customerRegion] = (acc[item.customerRegion] || 0) + 1;
       }
@@ -140,16 +140,16 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Sum personal_contact_requested
-    const personalContactRequested = chatbotData.reduce((sum, item) => sum + item.personalContactRequested, 0);
+    const personalContactRequested = chatbotData.reduce((sum: number, item: any) => sum + item.personalContactRequested, 0);
 
     // Sum avg_message_length
-    const totalAvgMessageLength = chatbotData.reduce((sum, item) => {
+    const totalAvgMessageLength = chatbotData.reduce((sum: number, item: any) => {
       return sum + (item.avgMessageLength || 0);
     }, 0);
 
     // Collect all keywords
     const allKeywords: string[] = [];
-    chatbotData.forEach((item) => {
+    chatbotData.forEach((item: any) => {
       if (item.keywords) {
         try {
           const keywords = typeof item.keywords === 'string' ? JSON.parse(item.keywords) : item.keywords;
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Count keyword frequencies
-    const keywordCounts = allKeywords.reduce((acc, keyword) => {
+    const keywordCounts = allKeywords.reduce((acc: Record<string, number>, keyword: string) => {
       const lower = keyword.toLowerCase();
       acc[lower] = (acc[lower] || 0) + 1;
       return acc;
@@ -182,34 +182,34 @@ export async function GET(request: NextRequest) {
 
     // Convert to array for word cloud
     const wordCloudData = Object.entries(keywordCounts)
-      .map(([text, value]) => ({ text, value }))
-      .sort((a, b) => b.value - a.value)
+      .map(([text, value]: [string, number]) => ({ text, value }))
+      .sort((a: any, b: any) => b.value - a.value)
       .slice(0, 100); // Limit to top 100
 
     // Get summaries with conversation_id and created_at
     const summaries = chatbotData
-      .filter((item) => item.summary)
-      .map((item) => ({
+      .filter((item: any) => item.summary)
+      .map((item: any) => ({
         conversationId: item.conversationId,
         summary: item.summary,
         createdAt: item.syncDate,
       }))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return NextResponse.json({
       botpressByDate: Object.values(botpressByDate),
       chatbotByDate: Object.values(chatbotByDate),
-      personalContactRequestedByDate: Object.values(chatbotByDate).map((item) => ({
+      personalContactRequestedByDate: Object.values(chatbotByDate).map((item: any) => ({
         date: item.date,
         personalContactRequested: item.personalContactRequested,
       })),
       totals: {
-        returningUsers: botpressData.reduce((sum, item) => sum + item.returningUsers, 0),
-        newUsers: botpressData.reduce((sum, item) => sum + item.newUsers, 0),
-        sessions: botpressData.reduce((sum, item) => sum + item.sessions, 0),
-        totalMessages: botpressData.reduce((sum, item) => sum + item.totalMessages, 0),
-        userMessages: botpressData.reduce((sum, item) => sum + item.userMessages, 0),
-        botMessages: botpressData.reduce((sum, item) => sum + item.botMessages, 0),
+        returningUsers: botpressData.reduce((sum: number, item: any) => sum + item.returningUsers, 0),
+        newUsers: botpressData.reduce((sum: number, item: any) => sum + item.newUsers, 0),
+        sessions: botpressData.reduce((sum: number, item: any) => sum + item.sessions, 0),
+        totalMessages: botpressData.reduce((sum: number, item: any) => sum + item.totalMessages, 0),
+        userMessages: botpressData.reduce((sum: number, item: any) => sum + item.userMessages, 0),
+        botMessages: botpressData.reduce((sum: number, item: any) => sum + item.botMessages, 0),
         avgMessageLength: totalAvgMessageLength,
         personalContactRequested,
       },
