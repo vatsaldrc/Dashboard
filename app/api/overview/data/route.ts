@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     const fromDateOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     const toDateOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
+    console.log(`[API] Date Range: ${fromDateOnly.toISOString().split('T')[0]} to ${toDateOnly.toISOString().split('T')[0]}`);
+
     // Fetch Botpress API analytics data
     const botpressData = await prisma.botpressApiAnalytics.findMany({
       where: {
@@ -33,6 +35,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[API] Botpress records found: ${botpressData.length}`);
+
     // Fetch ChatbotAnalytics data
     const chatbotData = await prisma.chatbotAnalytics.findMany({
       where: {
@@ -45,6 +49,8 @@ export async function GET(request: NextRequest) {
         date: 'asc',
       },
     });
+
+    console.log(`[API] Chatbot records found: ${chatbotData.length}`);
 
     // Aggregate Botpress API analytics by date
     const botpressByDate: Record<string, {
