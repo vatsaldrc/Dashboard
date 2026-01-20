@@ -88,8 +88,16 @@ export default function OverviewPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const fromDateStr = fromDate.toISOString().split('T')[0];
-      const toDateStr = toDate.toISOString().split('T')[0];
+      // Convert dates to local date strings (YYYY-MM-DD) without timezone conversion
+      const fromDateStr = fromDate.getFullYear() + '-' + 
+        String(fromDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(fromDate.getDate()).padStart(2, '0');
+      const toDateStr = toDate.getFullYear() + '-' + 
+        String(toDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(toDate.getDate()).padStart(2, '0');
+      
+      console.log(`[Frontend] Fetching data for date range: ${fromDateStr} to ${toDateStr}`);
+      
       const response = await fetch(
         `/api/overview/data?fromDate=${fromDateStr}&toDate=${toDateStr}`
       );

@@ -8,15 +8,30 @@ export async function GET(request: NextRequest) {
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
 
-    // Parse dates or use defaults
-    const from = fromDate ? new Date(fromDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Default: 30 days ago
-    const to = toDate ? new Date(toDate) : new Date();
+    console.log(`[API] Received dates: fromDate=${fromDate}, toDate=${toDate}`);
 
-    // Ensure dates are at start/end of day and convert to Date-only format for comparison
-    from.setHours(0, 0, 0, 0);
-    to.setHours(0, 0, 0, 0);
-    
-    // For date-only fields, we compare dates directly
+    // Parse dates as local dates (not UTC)
+    let from: Date;
+    let to: Date;
+
+    if (fromDate) {
+      const [year, month, day] = fromDate.split('-').map(Number);
+      from = new Date(year, month - 1, day, 0, 0, 0, 0);
+    } else {
+      from = new Date();
+      from.setDate(from.getDate() - 30);
+      from.setHours(0, 0, 0, 0);
+    }
+
+    if (toDate) {
+      const [year, month, day] = toDate.split('-').map(Number);
+      to = new Date(year, month - 1, day, 23, 59, 59, 999);
+    } else {
+      to = new Date();
+      to.setHours(23, 59, 59, 999);
+    }
+
+    // Convert to UTC dates for database comparison
     const fromDateOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     const toDateOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
