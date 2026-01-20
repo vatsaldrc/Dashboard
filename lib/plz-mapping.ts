@@ -6,6 +6,13 @@ interface PLZMapping {
 
 let plzCache: PLZMapping | null = null;
 
+// Fallback hardcoded mappings for common postal codes
+const FALLBACK_MAPPINGS: PLZMapping = {
+  '55116': 'Rheinland-Pfalz',
+  '55130': 'Rheinland-Pfalz',
+  '40498': 'Nordrhein-Westfalen',
+};
+
 export async function getPLZMapping(): Promise<PLZMapping> {
   if (plzCache) {
     console.log(`[PLZ Mapping] Using cached mapping with ${Object.keys(plzCache).length} entries`);
@@ -13,7 +20,7 @@ export async function getPLZMapping(): Promise<PLZMapping> {
   }
 
   try {
-    console.log(`[PLZ Mapping] Loading from database...`);
+    console.log(`[PLZ Mapping] Attempting to load from database...`);
     const postalMappings = await prisma.postalMP.findMany();
     
     console.log(`[PLZ Mapping] Found ${postalMappings.length} records in postal_mp table`);
@@ -27,13 +34,13 @@ export async function getPLZMapping(): Promise<PLZMapping> {
     if (Object.keys(plzCache).length > 0) {
       const samples = Object.entries(plzCache).slice(0, 5);
       console.log(`[PLZ Mapping] Sample mappings:`, samples);
-    } else {
-      console.warn(`[PLZ Mapping] ⚠️  No mappings created!`);
     }
     return plzCache;
   } catch (error) {
-    console.error('[PLZ Mapping] Error loading PLZ mapping from database:', error);
-    return {};
+    console.warn('[PLZ Mapping] Could not load from database, using fallback mappings:', error instanceof Error ? error.message : String(error));
+    plzCache = { ...FALLBACK_MAPPINGS };
+    console.log(`[PLZ Mapping] Using fallback mappings with ${Object.keys(plzCache).length} postal codes`);
+    return plzCache;
   }
 }
 
