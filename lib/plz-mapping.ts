@@ -13,23 +13,22 @@ export async function getPLZMapping(): Promise<PLZMapping> {
   }
 
   try {
+    console.log(`[PLZ Mapping] Loading from database...`);
     const postalMappings = await prisma.postalMP.findMany();
+    
+    console.log(`[PLZ Mapping] Found ${postalMappings.length} records in postal_mp table`);
     
     plzCache = {};
     for (const item of postalMappings) {
-      // Prisma converts snake_case DB column names to camelCase, so 'Postal Code' becomes 'postalCode'
-      const postalCode = (item as any).postalCode || (item as any)['Postal Code'];
-      if (postalCode && item.mp) {
-        plzCache[postalCode] = item.mp;
-      }
+      plzCache[item.postalCode] = item.mp;
     }
     
-    console.log(`[PLZ Mapping] Loaded ${Object.keys(plzCache).length} postal code mappings from database`);
+    console.log(`[PLZ Mapping] Created mapping with ${Object.keys(plzCache).length} unique postal codes`);
     if (Object.keys(plzCache).length > 0) {
       const samples = Object.entries(plzCache).slice(0, 5);
       console.log(`[PLZ Mapping] Sample mappings:`, samples);
     } else {
-      console.warn(`[PLZ Mapping] ⚠️  postal_mp table is EMPTY!`);
+      console.warn(`[PLZ Mapping] ⚠️  No mappings created!`);
     }
     return plzCache;
   } catch (error) {

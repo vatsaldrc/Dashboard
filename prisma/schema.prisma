@@ -81,10 +81,8 @@ model ChatbotAnalytics {
 
 model PostalMP {
     id          Int     @id @default(autoincrement())
-    postalCode  String  @unique @map("Postal Code") @db.VarChar(10)
-    mp          String  @map("mp") @db.VarChar(50)
-    createdAt   DateTime @default(now()) @map("created_at")
-    updatedAt   DateTime @updatedAt @map("updated_at")
+    postalCode  String  @unique @db.VarChar(10) @map("Postal Code")
+    mp          String  @db.VarChar(50)
 
     @@map("postal_mp")
 }
