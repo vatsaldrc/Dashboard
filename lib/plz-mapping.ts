@@ -8,6 +8,7 @@ let plzCache: PLZMapping | null = null;
 
 export async function getPLZMapping(): Promise<PLZMapping> {
   if (plzCache) {
+    console.log(`[PLZ Mapping] Using cached mapping with ${Object.keys(plzCache).length} entries`);
     return plzCache;
   }
 
@@ -20,6 +21,12 @@ export async function getPLZMapping(): Promise<PLZMapping> {
     }
     
     console.log(`[PLZ Mapping] Loaded ${Object.keys(plzCache).length} postal code mappings from database`);
+    if (Object.keys(plzCache).length > 0) {
+      const samples = Object.entries(plzCache).slice(0, 5);
+      console.log(`[PLZ Mapping] Sample mappings:`, samples);
+    } else {
+      console.warn(`[PLZ Mapping] ⚠️  postal_mp table is EMPTY!`);
+    }
     return plzCache;
   } catch (error) {
     console.error('[PLZ Mapping] Error loading PLZ mapping from database:', error);
