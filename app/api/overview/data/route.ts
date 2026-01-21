@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getPLZMapping } from '@/lib/plz-mapping';
 
 export async function GET(request: NextRequest) {
   try {
@@ -153,30 +152,12 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Aggregate customer_region with postal code mapping
+    // Aggregate customer_region - display postal codes as-is
     const customerRegionCounts: Record<string, number> = {};
-    const plzMapping = await getPLZMapping();
-    
-    console.log(`[API] PLZ Mapping size: ${Object.keys(plzMapping).length}`);
-    console.log(`[API] Processing ${chatbotData.length} chatbot records`);
-    
-    const postalCodesToLookup = new Set<string>();
-    for (const item of chatbotData) {
-      if (item.customerRegion) {
-        postalCodesToLookup.add(item.customerRegion);
-      }
-    }
-    console.log(`[API] Unique postal codes in data: ${Array.from(postalCodesToLookup).join(', ')}`);
     
     for (const item of chatbotData) {
       if (item.customerRegion) {
-        const regionName = plzMapping[item.customerRegion] || item.customerRegion;
-        if (plzMapping[item.customerRegion]) {
-          console.log(`[API] ✓ ${item.customerRegion} → ${regionName}`);
-        } else {
-          console.warn(`[API] ✗ ${item.customerRegion} not found in mapping`);
-        }
-        customerRegionCounts[regionName] = (customerRegionCounts[regionName] || 0) + 1;
+        customerRegionCounts[item.customerRegion] = (customerRegionCounts[item.customerRegion] || 0) + 1;
       }
     }
 
