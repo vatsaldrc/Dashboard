@@ -18,6 +18,7 @@ import { SentimentChart } from '@/components/overview/SentimentChart';
 import { ContactChannelChart } from '@/components/overview/ContactChannelChart';
 import { CustomerTypeChart } from '@/components/overview/CustomerTypeChart';
 import { CustomerRegionChart } from '@/components/overview/CustomerRegionChart';
+import { VermarktungsregionenChart } from '@/components/overview/VermarktungsregionenChart';
 import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
@@ -54,6 +55,7 @@ interface OverviewData {
   contactChannelCounts: Record<string, number>;
   customerTypeCounts: Record<string, number>;
   customerRegionCounts: Record<string, number>;
+  vermarktungsregionenCounts: Record<string, number>;
   wordCloudData: Array<{ text: string; value: number }>;
   summaries: Array<{
     conversationId: string;
@@ -207,6 +209,7 @@ export default function OverviewPage() {
             <ContactChannelChart data={data.contactChannelCounts} />
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
+            <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
             <WordCloud words={data.wordCloudData} />
             <SummaryList summaries={data.summaries} />
           </div>

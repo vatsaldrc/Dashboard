@@ -161,6 +161,38 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes to their "map" column
+    const postalCodes = new Set<string>();
+    for (const item of chatbotData) {
+      if (item.customerRegion) {
+        postalCodes.add(item.customerRegion);
+      }
+    }
+
+    // Get mapping from postal_mp table
+    const postalMappings = await prisma.postalMP.findMany({
+      where: {
+        postalCode: {
+          in: Array.from(postalCodes),
+        },
+      },
+    });
+
+    // Create postal code to region map
+    const postalToMapRegion: Record<string, string> = {};
+    for (const mapping of postalMappings) {
+      postalToMapRegion[mapping.postalCode] = mapping.mp;
+    }
+
+    // Aggregate by map region
+    const vermarktungsregionenCounts: Record<string, number> = {};
+    for (const item of chatbotData) {
+      if (item.customerRegion) {
+        const mapRegion = postalToMapRegion[item.customerRegion] || item.customerRegion;
+        vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
+      }
+    }
+
     // Sum personal_contact_requested
     const personalContactRequested = chatbotData.reduce((sum: number, item: any) => sum + item.personalContactRequested, 0);
 
@@ -239,6 +271,7 @@ export async function GET(request: NextRequest) {
       contactChannelCounts,
       customerTypeCounts,
       customerRegionCounts,
+      vermarktungsregionenCounts,
       wordCloudData,
       summaries,
     });
