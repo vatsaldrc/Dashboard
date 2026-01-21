@@ -165,7 +165,11 @@ export async function GET(request: NextRequest) {
     const postalCodes = new Set<string>();
     for (const item of chatbotData) {
       if (item.customerRegion) {
-        postalCodes.add(item.customerRegion);
+        // Clean up postal code - remove quotes and whitespace
+        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        if (cleanedPostalCode) {
+          postalCodes.add(cleanedPostalCode);
+        }
       }
     }
 
@@ -188,7 +192,9 @@ export async function GET(request: NextRequest) {
     const vermarktungsregionenCounts: Record<string, number> = {};
     for (const item of chatbotData) {
       if (item.customerRegion) {
-        const mapRegion = postalToMapRegion[item.customerRegion] || item.customerRegion;
+        // Clean up postal code - remove quotes and whitespace
+        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        const mapRegion = postalToMapRegion[cleanedPostalCode] || cleanedPostalCode;
         vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
       }
     }
