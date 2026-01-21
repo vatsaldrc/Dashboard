@@ -152,12 +152,16 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Aggregate customer_region - display postal codes as-is
+    // Aggregate customer_region - display postal codes (cleaned)
     const customerRegionCounts: Record<string, number> = {};
     
     for (const item of chatbotData) {
       if (item.customerRegion) {
-        customerRegionCounts[item.customerRegion] = (customerRegionCounts[item.customerRegion] || 0) + 1;
+        // Clean up postal code - remove quotes and whitespace
+        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        if (cleanedPostalCode) {
+          customerRegionCounts[cleanedPostalCode] = (customerRegionCounts[cleanedPostalCode] || 0) + 1;
+        }
       }
     }
 
@@ -197,7 +201,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
-    // Aggregate by map region
+    // Aggregate by map region - unmapped postal codes go to "National Sales"
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
@@ -205,17 +209,19 @@ export async function GET(request: NextRequest) {
       if (item.customerRegion) {
         // Clean up postal code - remove quotes and whitespace
         const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
-        const mapRegion = postalToMapRegion[cleanedPostalCode] || cleanedPostalCode;
         
         if (postalToMapRegion[cleanedPostalCode]) {
+          // Postal code found in mapping - use the region name
+          const mapRegion = postalToMapRegion[cleanedPostalCode];
           mappedCount.mapped++;
           console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
+          vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
         } else {
+          // Postal code NOT found - map to "National Sales"
           mappedCount.unmapped++;
-          console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} (not mapped, using as-is)`);
+          console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → National Sales (not in mapping)`);
+          vermarktungsregionenCounts['National Sales'] = (vermarktungsregionenCounts['National Sales'] || 0) + 1;
         }
-        
-        vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
       }
     }
 
