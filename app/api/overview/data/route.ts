@@ -173,6 +173,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log(`[Vermarktungsregionen] Found ${postalCodes.size} unique postal codes: ${Array.from(postalCodes).join(', ')}`);
+
     // Get mapping from postal_mp table
     const postalMappings = await prisma.postalMP.findMany({
       where: {
@@ -182,22 +184,43 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[Vermarktungsregionen] Found ${postalMappings.length} mappings in postal_mp table`);
+    postalMappings.forEach((mapping) => {
+      console.log(`[Vermarktungsregionen] ✓ ${mapping.postalCode} → ${mapping.mp}`);
+    });
+
     // Create postal code to region map
     const postalToMapRegion: Record<string, string> = {};
     for (const mapping of postalMappings) {
       postalToMapRegion[mapping.postalCode] = mapping.mp;
     }
 
+    console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
+
     // Aggregate by map region
     const vermarktungsregionenCounts: Record<string, number> = {};
+    const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
+    
     for (const item of chatbotData) {
       if (item.customerRegion) {
         // Clean up postal code - remove quotes and whitespace
         const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
         const mapRegion = postalToMapRegion[cleanedPostalCode] || cleanedPostalCode;
+        
+        if (postalToMapRegion[cleanedPostalCode]) {
+          mappedCount.mapped++;
+          console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
+        } else {
+          mappedCount.unmapped++;
+          console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} (not mapped, using as-is)`);
+        }
+        
         vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
       }
     }
+
+    console.log(`[Vermarktungsregionen] Aggregation complete: ${mappedCount.mapped} mapped, ${mappedCount.unmapped} unmapped`);
+    console.log(`[Vermarktungsregionen] Final regions:`, Object.entries(vermarktungsregionenCounts).map(([region, count]) => `${region} (${count})`).join(', '));
 
     // Sum personal_contact_requested
     const personalContactRequested = chatbotData.reduce((sum: number, item: any) => sum + item.personalContactRequested, 0);
