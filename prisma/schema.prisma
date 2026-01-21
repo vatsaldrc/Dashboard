@@ -80,8 +80,7 @@ model ChatbotAnalytics {
 }
 
 model PostalMP {
-    id          Int     @id @default(autoincrement())
-    postalCode  String  @unique @db.VarChar(10) @map("postal_code")
+    postalCode  String  @id @db.VarChar(10) @map("postal_code")
     mp          String  @db.VarChar(50)
 
     @@map("postal_mp")
