@@ -66,6 +66,21 @@ export async function GET(request: NextRequest) {
 
     console.log(`[API] Chatbot records found: ${chatbotData.length}`);
 
+    // Fetch Leads data
+    const leadsData = await prisma.leads.findMany({
+      where: {
+        createdAt: {
+          gte: new Date(fromDateOnly),
+          lte: new Date(toDateOnly),
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    console.log(`[API] Leads records found: ${leadsData.length}`);
+
     // Aggregate Botpress API analytics by date
     const botpressByDate: Record<string, {
       date: string;
@@ -152,6 +167,15 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
+    // Log raw postal codes from database
+    const rawPostalCodes = new Set<string>();
+    for (const item of chatbotData) {
+      if (item.customerRegion) {
+        rawPostalCodes.add(String(item.customerRegion));
+      }
+    }
+    console.log(`[PLZ Debug] Raw postal codes from database: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
+
     // Aggregate customer_region - display postal codes (cleaned)
     const customerRegionCounts: Record<string, number> = {};
     
@@ -164,6 +188,9 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    
+    console.log(`[PLZ Debug] Cleaned postal codes for PLZ chart: ${Object.keys(customerRegionCounts).map(p => JSON.stringify(p)).join(', ')}`);
+    console.log(`[PLZ Debug] PLZ chart counts:`, customerRegionCounts);
 
     // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes to their "map" column
     const postalCodes = new Set<string>();
@@ -189,7 +216,7 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[Vermarktungsregionen] Found ${postalMappings.length} mappings in postal_mp table`);
-    postalMappings.forEach((mapping) => {
+    postalMappings.forEach((mapping: any) => {
       console.log(`[Vermarktungsregionen] ✓ ${mapping.postalCode} → ${mapping.mp}`);
     });
 
@@ -228,8 +255,26 @@ export async function GET(request: NextRequest) {
     console.log(`[Vermarktungsregionen] Aggregation complete: ${mappedCount.mapped} mapped, ${mappedCount.unmapped} unmapped`);
     console.log(`[Vermarktungsregionen] Final regions:`, Object.entries(vermarktungsregionenCounts).map(([region, count]) => `${region} (${count})`).join(', '));
 
-    // Sum personal_contact_requested
-    const personalContactRequested = chatbotData.reduce((sum: number, item: any) => sum + item.personalContactRequested, 0);
+    // Aggregate Leads by date
+    const leadsByDate: Record<string, {
+      date: string;
+      leadsCount: number;
+    }> = leadsData.reduce((acc: Record<string, any>, item: any) => {
+      const dateKey = item.createdAt.toISOString().split('T')[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          date: dateKey,
+          leadsCount: 0,
+        };
+      }
+      acc[dateKey].leadsCount += 1;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Count total leads as personal contact requests
+    const personalContactRequested = leadsData.length;
+    
+    console.log(`[Leads] Total leads found: ${personalContactRequested}`);
 
     // Sum avg_message_length
     const totalAvgMessageLength = chatbotData.reduce((sum: number, item: any) => {
@@ -288,9 +333,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       botpressByDate: Object.values(botpressByDate),
       chatbotByDate: Object.values(chatbotByDate),
-      personalContactRequestedByDate: Object.values(chatbotByDate).map((item: any) => ({
+      personalContactRequestedByDate: Object.values(leadsByDate).map((item: any) => ({
         date: item.date,
-        personalContactRequested: item.personalContactRequested,
+        personalContactRequested: item.leadsCount,
       })),
       totals: {
         returningUsers: botpressData.reduce((sum: number, item: any) => sum + item.returningUsers, 0),
