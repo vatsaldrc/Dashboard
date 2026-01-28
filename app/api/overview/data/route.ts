@@ -159,8 +159,8 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Aggregate customer_type
-    const customerTypeCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
+    // Aggregate customer_type from leads table
+    const customerTypeCounts = leadsData.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerType) {
         acc[item.customerType] = (acc[item.customerType] || 0) + 1;
       }
