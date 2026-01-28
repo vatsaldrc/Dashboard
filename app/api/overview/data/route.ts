@@ -189,13 +189,20 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Aggregate requested_contact_channel
-    const contactChannelCounts = chatbotData.reduce((acc: Record<string, number>, item: any) => {
-      if (item.requestedContactChannel) {
-        acc[item.requestedContactChannel] = (acc[item.requestedContactChannel] || 0) + 1;
+    // Aggregate preferred contact channels from leads table (phone and email)
+    const contactChannelCounts: Record<string, number> = { 'Telefon': 0, 'E-Mail': 0, 'Beides': 0 };
+    for (const item of leadsDataForPostalCodes) {
+      const hasPhone = item.phone && String(item.phone).replace(/["\s]/g, '').trim();
+      const hasEmail = item.email && String(item.email).replace(/["\s]/g, '').trim();
+      
+      if (hasPhone && hasEmail) {
+        contactChannelCounts['Beides']++;
+      } else if (hasPhone) {
+        contactChannelCounts['Telefon']++;
+      } else if (hasEmail) {
+        contactChannelCounts['E-Mail']++;
       }
-      return acc;
-    }, {} as Record<string, number>);
+    }
 
     // Aggregate customer_type from leads table
     const customerTypeCounts = leadsData.reduce((acc: Record<string, number>, item: any) => {
@@ -300,7 +307,7 @@ export async function GET(request: NextRequest) {
     console.log(`[Vermarktungsregionen] Aggregation complete: ${mappedCount.mapped} mapped, ${mappedCount.unmapped} unmapped`);
     console.log(`[Vermarktungsregionen] Final regions:`, Object.entries(vermarktungsregionenCounts).map(([region, count]) => `${region} (${count})`).join(', '));
 
-    // Aggregate Leads by date
+    // Aggregate Leads by date (for date range selected by user)
     const leadsByDate: Record<string, {
       date: string;
       leadsCount: number;
@@ -316,8 +323,8 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, any>);
 
-    // Count total leads as personal contact requests
-    const personalContactRequested = leadsData.length;
+    // Count total leads as personal contact requests (all leads, regardless of date range)
+    const personalContactRequested = leadsDataForPostalCodes.length;
     
     console.log(`[Leads] Total leads found: ${personalContactRequested}`);
 
