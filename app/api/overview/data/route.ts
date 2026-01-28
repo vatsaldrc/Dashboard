@@ -181,8 +181,10 @@ export async function GET(request: NextRequest) {
     
     for (const item of leadsData) {
       if (item.postalCode) {
-        // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
+        // Clean up postal code - remove all quotes and backslashes
+        const cleanedPostalCode = String(item.postalCode)
+          .replace(/[\\"'"]/g, '')
+          .trim();
         if (cleanedPostalCode) {
           customerRegionCounts[cleanedPostalCode] = (customerRegionCounts[cleanedPostalCode] || 0) + 1;
         }
@@ -196,8 +198,10 @@ export async function GET(request: NextRequest) {
     const postalCodes = new Set<string>();
     for (const item of leadsData) {
       if (item.postalCode) {
-        // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
+        // Clean up postal code - remove all quotes (both single and double, including escaped ones), whitespace, and backslashes
+        const cleanedPostalCode = String(item.postalCode)
+          .replace(/[\\"'"]/g, '')
+          .trim();
         // Only include valid 5-digit German postal codes
         if (cleanedPostalCode && /^\d{5}$/.test(cleanedPostalCode)) {
           postalCodes.add(cleanedPostalCode);
@@ -229,27 +233,33 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
-    // Aggregate by map region - only include mapped postal codes
+    // Aggregate by map region - only include valid mapped postal codes (exclude test data)
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
     for (const item of leadsData) {
       if (item.postalCode) {
-        // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
+        // Clean up postal code - remove all quotes and backslashes
+        const cleanedPostalCode = String(item.postalCode)
+          .replace(/[\\"'"]/g, '')
+          .trim();
         
         // Only process valid 5-digit German postal codes
         if (/^\d{5}$/.test(cleanedPostalCode)) {
           if (postalToMapRegion[cleanedPostalCode]) {
-            // Postal code found in mapping - use the region name
             const mapRegion = postalToMapRegion[cleanedPostalCode];
-            mappedCount.mapped++;
-            console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
-            vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
+            // Exclude "test" region from results
+            if (mapRegion !== 'test') {
+              mappedCount.mapped++;
+              console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
+              vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
+            } else {
+              console.log(`[Vermarktungsregionen] ⊘ ${cleanedPostalCode} → test (skipped)`);
+            }
           } else {
-            // Valid postal code NOT found in mapping
+            // Valid postal code NOT found in mapping - skip it
             mappedCount.unmapped++;
-            console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → Not in mapping`);
+            console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → Not in mapping (skipped)`);
           }
         } else {
           // Invalid test postal code - skip it
