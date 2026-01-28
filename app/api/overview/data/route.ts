@@ -167,22 +167,22 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Log raw postal codes from database
+    // Log raw postal codes from leads table
     const rawPostalCodes = new Set<string>();
-    for (const item of chatbotData) {
-      if (item.customerRegion) {
-        rawPostalCodes.add(String(item.customerRegion));
+    for (const item of leadsData) {
+      if (item.postalCode) {
+        rawPostalCodes.add(String(item.postalCode));
       }
     }
-    console.log(`[PLZ Debug] Raw postal codes from database: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
+    console.log(`[PLZ Debug] Raw postal codes from leads table: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
 
-    // Aggregate customer_region - display postal codes (cleaned)
+    // Aggregate postal codes from leads table - display postal codes (cleaned)
     const customerRegionCounts: Record<string, number> = {};
     
-    for (const item of chatbotData) {
-      if (item.customerRegion) {
+    for (const item of leadsData) {
+      if (item.postalCode) {
         // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
         if (cleanedPostalCode) {
           customerRegionCounts[cleanedPostalCode] = (customerRegionCounts[cleanedPostalCode] || 0) + 1;
         }
@@ -192,12 +192,12 @@ export async function GET(request: NextRequest) {
     console.log(`[PLZ Debug] Cleaned postal codes for PLZ chart: ${Object.keys(customerRegionCounts).map(p => JSON.stringify(p)).join(', ')}`);
     console.log(`[PLZ Debug] PLZ chart counts:`, customerRegionCounts);
 
-    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes to their "map" column
+    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column
     const postalCodes = new Set<string>();
-    for (const item of chatbotData) {
-      if (item.customerRegion) {
+    for (const item of leadsData) {
+      if (item.postalCode) {
         // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
         if (cleanedPostalCode) {
           postalCodes.add(cleanedPostalCode);
         }
@@ -232,10 +232,10 @@ export async function GET(request: NextRequest) {
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
-    for (const item of chatbotData) {
-      if (item.customerRegion) {
+    for (const item of leadsData) {
+      if (item.postalCode) {
         // Clean up postal code - remove quotes and whitespace
-        const cleanedPostalCode = String(item.customerRegion).replace(/['"]/g, '').trim();
+        const cleanedPostalCode = String(item.postalCode).replace(/['"]/g, '').trim();
         
         if (postalToMapRegion[cleanedPostalCode]) {
           // Postal code found in mapping - use the region name
