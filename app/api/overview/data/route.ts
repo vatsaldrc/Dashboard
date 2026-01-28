@@ -95,12 +95,6 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[API] Leads records found: ${leadsData.length}`);
-    if (leadsData.length > 0) {
-      console.log(`[DEBUG] First lead object keys:`, Object.keys(leadsData[0]));
-      console.log(`[DEBUG] First lead postalCode value:`, leadsData[0].postalCode);
-      console.log(`[DEBUG] Lead createdAt dates: ${leadsData.map((l: any) => l.createdAt).join(', ')}`);
-      console.log(`[DEBUG] First lead full object:`, JSON.stringify(leadsData[0]));
-    }
 
     // Aggregate Botpress API analytics by date
     const botpressByDate: Record<string, {
