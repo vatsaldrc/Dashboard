@@ -213,12 +213,11 @@ export async function GET(request: NextRequest) {
     const postalCodes = new Set<string>();
     for (const item of leadsData) {
       if (item.postalCode) {
-        // Clean up postal code - remove all quotes (both single and double, including escaped ones), whitespace, and backslashes
+        // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
           .replace(/[\\"'"]/g, '')
           .trim();
-        // Only include valid 5-digit German postal codes
-        if (cleanedPostalCode && /^\d{5}$/.test(cleanedPostalCode)) {
+        if (cleanedPostalCode) {
           postalCodes.add(cleanedPostalCode);
         }
       }
@@ -248,7 +247,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
-    // Aggregate by map region - only include valid mapped postal codes (exclude test data)
+    // Aggregate by map region - include all postal codes
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
@@ -259,26 +258,18 @@ export async function GET(request: NextRequest) {
           .replace(/[\\"'"]/g, '')
           .trim();
         
-        // Only process valid 5-digit German postal codes
-        if (/^\d{5}$/.test(cleanedPostalCode)) {
+        if (cleanedPostalCode) {
           if (postalToMapRegion[cleanedPostalCode]) {
             const mapRegion = postalToMapRegion[cleanedPostalCode];
-            // Exclude "test" region from results
-            if (mapRegion !== 'test') {
-              mappedCount.mapped++;
-              console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
-              vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
-            } else {
-              console.log(`[Vermarktungsregionen] ⊘ ${cleanedPostalCode} → test (skipped)`);
-            }
+            mappedCount.mapped++;
+            console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
+            vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
           } else {
-            // Valid postal code NOT found in mapping - skip it
+            // Postal code NOT found in mapping - map to "National Sales"
             mappedCount.unmapped++;
-            console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → Not in mapping (skipped)`);
+            console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → National Sales (not in mapping)`);
+            vermarktungsregionenCounts['National Sales'] = (vermarktungsregionenCounts['National Sales'] || 0) + 1;
           }
-        } else {
-          // Invalid test postal code - skip it
-          console.log(`[Vermarktungsregionen] ⊘ ${cleanedPostalCode} → Invalid format (skipped)`);
         }
       }
     }
