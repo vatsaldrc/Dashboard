@@ -94,7 +94,30 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`[API] Leads records found: ${leadsData.length}`);
+    // Fetch Leads data for all time (for postal code based charts)
+    const leadsDataForPostalCodes = await prisma.leads.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        postalCode: true,
+        company: true,
+        customerType: true,
+        conversationSummary: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        conversationId: true,
+        workflowExecutionId: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    console.log(`[API] Leads records found (for date range): ${leadsData.length}`);
+    console.log(`[API] All leads records found (for postal codes): ${leadsDataForPostalCodes.length}`);
 
     // Aggregate Botpress API analytics by date
     const botpressByDate: Record<string, {
@@ -184,7 +207,7 @@ export async function GET(request: NextRequest) {
 
     // Log raw postal codes from leads table
     const rawPostalCodes = new Set<string>();
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         rawPostalCodes.add(String(item.postalCode));
       }
@@ -194,7 +217,7 @@ export async function GET(request: NextRequest) {
     // Aggregate postal codes from leads table - display postal codes (cleaned)
     const customerRegionCounts: Record<string, number> = {};
     
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -211,7 +234,7 @@ export async function GET(request: NextRequest) {
 
     // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column
     const postalCodes = new Set<string>();
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -251,7 +274,7 @@ export async function GET(request: NextRequest) {
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
