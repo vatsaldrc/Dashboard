@@ -21,7 +21,7 @@ export function CategoryBarChart({ title, data, color = '#3b82f6' }: CategoryBar
       <ResponsiveContainer width="100%" height={300}>
         <RechartsBarChart data={chartData} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-          <XAxis type="number" tick={{ fontSize: 12 }} />
+          <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
           <YAxis 
             type="category" 
             dataKey="name" 
