@@ -209,10 +209,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Aggregate customer_type from leads table
-    const customerTypeCounts = leadsData.reduce((acc: Record<string, number>, item: any) => {
+    // Aggregate customer_type from leads table (all leads, not date-filtered)
+    // Normalize customer types: b2b = Geschäftskunden, b2c = Privatkunden
+    const customerTypeCounts = leadsDataForPostalCodes.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerType) {
-        acc[item.customerType] = (acc[item.customerType] || 0) + 1;
+        let normalizedType = item.customerType.toLowerCase().trim();
+        
+        // Normalize to standard categories
+        if (normalizedType === 'b2b' || normalizedType === 'geschäftskunden') {
+          normalizedType = 'Geschäftskunden';
+        } else if (normalizedType === 'b2c' || normalizedType === 'privatkunden') {
+          normalizedType = 'Privatkunden';
+        } else if (normalizedType === 'private') {
+          normalizedType = 'Privatkunden';
+        }
+        
+        acc[normalizedType] = (acc[normalizedType] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
