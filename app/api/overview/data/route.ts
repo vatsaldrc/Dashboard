@@ -190,9 +190,9 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Aggregate preferred contact channels from leads table (phone and email)
-    // Count all available contact channels (not exclusive categories)
+    // Count all available contact channels (not exclusive categories) - date-filtered
     const contactChannelCounts: Record<string, number> = { 'Telefon': 0, 'E-Mail': 0, 'Beides': 0 };
-    for (const item of leadsDataForPostalCodes) {
+    for (const item of leadsData) {
       // Check if phone exists and is not null/empty
       const hasPhone = item.phone && String(item.phone).replace(/["\s]/g, '').trim().length > 0;
       // Check if email exists and is not null/empty
@@ -209,9 +209,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Aggregate customer_type from leads table (all leads, not date-filtered)
+    // Aggregate customer_type from leads table (date-filtered)
     // Normalize customer types: b2b = Geschäftskunden, b2c = Privatkunden
-    const customerTypeCounts = leadsDataForPostalCodes.reduce((acc: Record<string, number>, item: any) => {
+    const customerTypeCounts = leadsData.reduce((acc: Record<string, number>, item: any) => {
       if (item.customerType) {
         let normalizedType = item.customerType.toLowerCase().trim();
         
@@ -238,10 +238,10 @@ export async function GET(request: NextRequest) {
     }
     console.log(`[PLZ Debug] Raw postal codes from leads table: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
 
-    // Aggregate postal codes from leads table - display postal codes (cleaned)
+    // Aggregate postal codes from leads table - display postal codes (cleaned) - date-filtered
     const customerRegionCounts: Record<string, number> = {};
     
-    for (const item of leadsDataForPostalCodes) {
+    for (const item of leadsData) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -256,9 +256,9 @@ export async function GET(request: NextRequest) {
     console.log(`[PLZ Debug] Cleaned postal codes for PLZ chart: ${Object.keys(customerRegionCounts).map(p => JSON.stringify(p)).join(', ')}`);
     console.log(`[PLZ Debug] PLZ chart counts:`, customerRegionCounts);
 
-    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column
+    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column - date-filtered
     const postalCodes = new Set<string>();
-    for (const item of leadsDataForPostalCodes) {
+    for (const item of leadsData) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -294,11 +294,11 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
-    // Aggregate by map region - include all postal codes
+    // Aggregate by map region - include all postal codes (date-filtered)
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
-    for (const item of leadsDataForPostalCodes) {
+    for (const item of leadsData) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
