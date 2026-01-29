@@ -238,10 +238,10 @@ export async function GET(request: NextRequest) {
     }
     console.log(`[PLZ Debug] Raw postal codes from leads table: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
 
-    // Aggregate postal codes from leads table - display postal codes (cleaned) - date-filtered
+    // Aggregate postal codes from leads table - display postal codes (cleaned) - all leads
     const customerRegionCounts: Record<string, number> = {};
     
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -256,9 +256,9 @@ export async function GET(request: NextRequest) {
     console.log(`[PLZ Debug] Cleaned postal codes for PLZ chart: ${Object.keys(customerRegionCounts).map(p => JSON.stringify(p)).join(', ')}`);
     console.log(`[PLZ Debug] PLZ chart counts:`, customerRegionCounts);
 
-    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column - date-filtered
+    // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column - all leads
     const postalCodes = new Set<string>();
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
@@ -294,11 +294,11 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
-    // Aggregate by map region - include all postal codes (date-filtered)
+    // Aggregate by map region - include all postal codes (all leads)
     const vermarktungsregionenCounts: Record<string, number> = {};
     const mappedCount: Record<string, number> = { mapped: 0, unmapped: 0 };
     
-    for (const item of leadsData) {
+    for (const item of leadsDataForPostalCodes) {
       if (item.postalCode) {
         // Clean up postal code - remove all quotes and backslashes
         const cleanedPostalCode = String(item.postalCode)
