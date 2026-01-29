@@ -190,17 +190,22 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Aggregate preferred contact channels from leads table (phone and email)
+    // Count all available contact channels (not exclusive categories)
     const contactChannelCounts: Record<string, number> = { 'Telefon': 0, 'E-Mail': 0, 'Beides': 0 };
     for (const item of leadsDataForPostalCodes) {
-      const hasPhone = item.phone && String(item.phone).replace(/["\s]/g, '').trim();
-      const hasEmail = item.email && String(item.email).replace(/["\s]/g, '').trim();
+      // Check if phone exists and is not null/empty
+      const hasPhone = item.phone && String(item.phone).replace(/["\s]/g, '').trim().length > 0;
+      // Check if email exists and is not null/empty
+      const hasEmail = item.email && String(item.email).replace(/["\s]/g, '').trim().length > 0;
       
+      if (hasPhone) {
+        contactChannelCounts['Telefon']++;
+      }
+      if (hasEmail) {
+        contactChannelCounts['E-Mail']++;
+      }
       if (hasPhone && hasEmail) {
         contactChannelCounts['Beides']++;
-      } else if (hasPhone) {
-        contactChannelCounts['Telefon']++;
-      } else if (hasEmail) {
-        contactChannelCounts['E-Mail']++;
       }
     }
 
