@@ -307,11 +307,11 @@ export async function GET(request: NextRequest) {
     console.log(`[Vermarktungsregionen] Aggregation complete: ${mappedCount.mapped} mapped, ${mappedCount.unmapped} unmapped`);
     console.log(`[Vermarktungsregionen] Final regions:`, Object.entries(vermarktungsregionenCounts).map(([region, count]) => `${region} (${count})`).join(', '));
 
-    // Aggregate Leads by date (for date range selected by user)
+    // Aggregate Leads by date (for ALL leads, regardless of date range - to show complete chart)
     const leadsByDate: Record<string, {
       date: string;
       leadsCount: number;
-    }> = leadsData.reduce((acc: Record<string, any>, item: any) => {
+    }> = leadsDataForPostalCodes.reduce((acc: Record<string, any>, item: any) => {
       const dateKey = item.createdAt.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
