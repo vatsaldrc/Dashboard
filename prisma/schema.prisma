@@ -59,9 +59,9 @@ model ChatbotAnalytics {
     conversationId            String  @map("conversation_id") @db.VarChar(255)
     date                      DateTime @db.Date
     integration               String  @db.VarChar(255)
-    totalMessages             Int     @default(0) @map("total_messages")
-    userMessages              Int     @default(0) @map("user_messages")
-    botMessages               Int     @default(0) @map("bot_messages")
+    totalMessages Int? @default(0) @map("total_messages")
+    userMessages              Int?     @default(0) @map("user_messages")
+    botMessages               Int?     @default(0) @map("bot_messages")
     avgMessageLength          Float?  @map("avg_message_length")
     sentiment                 String? @db.VarChar(20)
     keywords                  Json?   @map("keywords")
