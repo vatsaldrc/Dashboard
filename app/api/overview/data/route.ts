@@ -406,77 +406,159 @@ export async function GET(request: NextRequest) {
     toDateTime.setHours(23, 59, 59, 999);
 
     const sankeyRawData = await prisma.$queryRaw<{ source: string; target: string; value: number }[]>`
-      WITH funnel AS (
-    -- Get the base flow for every execution that started in our time window
-    SELECT
-        log.execution_id,
-        MAX(CASE WHEN log.activity = 'booking_contact_method_selected' THEN log.activity_data END) as contact_method,
-        MAX(CASE WHEN log.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected') THEN 1 ELSE 0 END) as has_details,
-        MAX(CASE WHEN log.activity = 'customer_type_selected' THEN
-            CASE
-                WHEN LOWER(log.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'business'
-                WHEN LOWER(log.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'private'
-                ELSE LOWER(log.activity_data)
-            END
-        END) as customer_type,
-        MAX(CASE WHEN log.activity = 'booking_cancelled' THEN 1 ELSE 0 END) as is_cancelled
-    FROM workflow_activity_logs log
-    WHERE log.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-    GROUP BY log.execution_id
-),
-outcomes AS (
-    -- Determine if a lead was actually created in the leads table
-    SELECT 
-        f.*,
-        CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as lead_created
-    FROM funnel f
-    LEFT JOIN leads l ON f.execution_id = l.workflow_execution_id
-)
+      -- Step 1: booking_started -> contact_method
+      SELECT
+        'booking_started' AS source,
+        CONCAT('contact_method_', a.activity_data) AS target,
+        COUNT(DISTINCT a.execution_id) AS value
+      FROM workflow_activity_logs a
+      WHERE a.activity = 'booking_contact_method_selected'
+        AND a.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+      GROUP BY a.activity_data
 
--- Now we build the Link steps
--- Step 1: Start -> Contact Method
-SELECT 'booking_started' AS source, CONCAT('contact_method_', contact_method) AS target, COUNT(*) AS value 
-FROM outcomes WHERE contact_method IS NOT NULL GROUP BY contact_method
+      UNION ALL
 
-UNION ALL
+      -- Step 2: contact_method -> details_collected
+      SELECT
+        CONCAT('contact_method_', cm.activity_data) AS source,
+        'details_collected' AS target,
+        COUNT(DISTINCT cm.execution_id) AS value
+      FROM workflow_activity_logs cm
+      WHERE cm.activity = 'booking_contact_method_selected'
+        AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        AND EXISTS (
+          SELECT 1 FROM workflow_activity_logs details
+          WHERE details.execution_id = cm.execution_id
+          AND details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+          AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+      GROUP BY cm.activity_data
 
--- Step 2: Contact Method -> Details Collected
-SELECT CONCAT('contact_method_', contact_method) AS source, 'details_collected' AS target, COUNT(*) AS value 
-FROM outcomes WHERE contact_method IS NOT NULL AND has_details = 1 GROUP BY contact_method
+      UNION ALL
 
-UNION ALL
+      -- Step 3: details_collected -> customer_type (B2B/B2C)
+      SELECT
+        'details_collected' AS source,
+        CASE 
+          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
+          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
+          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
+        END AS target,
+        COUNT(DISTINCT ct.execution_id) AS value
+      FROM workflow_activity_logs ct
+      WHERE ct.activity = 'customer_type_selected'
+        AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        AND EXISTS (
+          SELECT 1 FROM workflow_activity_logs cm
+          WHERE cm.execution_id = ct.execution_id
+          AND cm.activity = 'booking_contact_method_selected'
+          AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+      GROUP BY 
+        CASE 
+          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
+          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
+          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
+        END
 
--- Step 3: Contact Method -> Dropped (Before details)
-SELECT CONCAT('contact_method_', contact_method) AS source, 'dropped' AS target, COUNT(*) AS value 
-FROM outcomes WHERE contact_method IS NOT NULL AND has_details = 0 AND is_cancelled = 0 AND lead_created = 0 GROUP BY contact_method
+      UNION ALL
 
-UNION ALL
+      -- Step 4: customer_type -> final outcome (lead_created or dropped)
+      SELECT
+        CASE 
+          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
+          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
+          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
+        END AS source,
+        CASE
+          WHEN l.workflow_execution_id IS NOT NULL THEN 'lead_created'
+          WHEN c.execution_id IS NOT NULL THEN 'booking_cancelled'
+          ELSE 'dropped'
+        END AS target,
+        COUNT(DISTINCT ct.execution_id) AS value
+      FROM workflow_activity_logs ct
+      LEFT JOIN leads l
+        ON ct.execution_id = l.workflow_execution_id
+      LEFT JOIN workflow_activity_logs c
+        ON ct.execution_id = c.execution_id
+        AND c.activity = 'booking_cancelled'
+        AND c.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+      WHERE ct.activity = 'customer_type_selected'
+        AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+      GROUP BY 
+        CASE 
+          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
+          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
+          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
+        END,
+        CASE
+          WHEN l.workflow_execution_id IS NOT NULL THEN 'lead_created'
+          WHEN c.execution_id IS NOT NULL THEN 'booking_cancelled'
+          ELSE 'dropped'
+        END
 
--- Step 4: Details Collected -> Customer Type
-SELECT 'details_collected' AS source, CONCAT('customer_type_', customer_type) AS target, COUNT(*) AS value 
-FROM outcomes WHERE has_details = 1 AND customer_type IS NOT NULL GROUP BY customer_type
+      UNION ALL
 
-UNION ALL
+      -- Handle cases where users drop after contact method but before details
+      SELECT
+        CONCAT('contact_method_', cm.activity_data) AS source,
+        'dropped' AS target,
+        COUNT(DISTINCT cm.execution_id) AS value
+      FROM workflow_activity_logs cm
+      WHERE cm.activity = 'booking_contact_method_selected'
+        AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        AND NOT EXISTS (
+          SELECT 1 FROM workflow_activity_logs details
+          WHERE details.execution_id = cm.execution_id
+          AND details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+          AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM leads l WHERE l.workflow_execution_id = cm.execution_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM workflow_activity_logs cancel
+          WHERE cancel.execution_id = cm.execution_id
+          AND cancel.activity = 'booking_cancelled'
+          AND cancel.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+      GROUP BY cm.activity_data
 
--- Step 5: Details Collected -> Dropped (After details, before type)
-SELECT 'details_collected' AS source, 'dropped' AS target, COUNT(*) AS value 
-FROM outcomes WHERE has_details = 1 AND customer_type IS NULL AND is_cancelled = 0 AND lead_created = 0
+      UNION ALL
 
-UNION ALL
+      -- Handle cases where users drop after details but before customer_type
+      SELECT
+        'details_collected' AS source,
+        'dropped' AS target,
+        COUNT(DISTINCT details.execution_id) AS value
+      FROM workflow_activity_logs details
+      WHERE details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+        AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        AND EXISTS (
+          SELECT 1 FROM workflow_activity_logs cm
+          WHERE cm.execution_id = details.execution_id
+          AND cm.activity = 'booking_contact_method_selected'
+          AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM workflow_activity_logs ct
+          WHERE ct.execution_id = details.execution_id
+          AND ct.activity = 'customer_type_selected'
+          AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM leads l WHERE l.workflow_execution_id = details.execution_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM workflow_activity_logs cancel
+          WHERE cancel.execution_id = details.execution_id
+          AND cancel.activity = 'booking_cancelled'
+          AND cancel.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+        )
+      HAVING COUNT(DISTINCT details.execution_id) > 0;
+      `;
+    console.log("RAW SANKEY DATA", sankeyRawData);
 
--- Step 6: Customer Type -> Outcome (Lead / Cancelled / Dropped)
-SELECT 
-    CONCAT('customer_type_', customer_type) AS source,
-    CASE 
-        WHEN lead_created = 1 THEN 'lead_created'
-        WHEN is_cancelled = 1 THEN 'booking_cancelled'
-        ELSE 'dropped'
-    END AS target,
-    COUNT(*) AS value
-FROM outcomes 
-WHERE customer_type IS NOT NULL
-GROUP BY customer_type, target;
-    `;
     const labels = Array.from(
       new Set(
         sankeyRawData.flatMap((row) => [row.source, row.target])
