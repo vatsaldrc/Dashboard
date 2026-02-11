@@ -22,6 +22,8 @@ import { VermarktungsregionenChart } from '@/components/overview/Vermarktungsreg
 import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
+import { BookingSankeyChart } from '@/components/overview/SankeyChart';
+import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
 
 interface OverviewData {
   botpressByDate: Array<{
@@ -62,6 +64,10 @@ interface OverviewData {
     summary: string | null;
     createdAt: string;
   }>;
+  sankeyData: {
+    nodes: { id: string }[];
+    links: { source: string; target: string; value: number }[];
+  };
 }
 
 export default function OverviewPage() {
@@ -211,6 +217,8 @@ export default function OverviewPage() {
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
             <WordCloud words={data.wordCloudData} />
+            {/* <BookingSankeyChart data={data.sankeyData} /> */}
+            <BookingSankeyChartPlotly data={data.sankeyData} />
             <SummaryList summaries={data.summaries} />
           </div>
         </div>
