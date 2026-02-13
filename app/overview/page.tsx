@@ -216,9 +216,8 @@ export default function OverviewPage() {
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
-            <WordCloud words={data.wordCloudData} />
-            {/* <BookingSankeyChart data={data.sankeyData} /> */}
             <BookingSankeyChartPlotly data={data.sankeyData} />
+            <WordCloud words={data.wordCloudData} />
             <SummaryList summaries={data.summaries} />
           </div>
         </div>

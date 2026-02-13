@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -24,16 +30,16 @@ export async function GET(request: NextRequest) {
 
     if (toDate) {
       const [year, month, day] = toDate.split('-').map(Number);
-      to = new Date(year, month - 1, day, 23, 59, 59, 999);
+      to = new Date(year, month - 1, day, 0, 0, 0, 0); // Set to start of day for clean math
     } else {
       to = new Date();
-      to.setHours(23, 59, 59, 999);
+      to.setHours(0, 0, 0, 0);
     }
 
     // Convert to UTC dates for database comparison
-    const fromDateOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-    const toDateOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
 
+    const fromDateOnly = from;
+    const toDateOnly = to;
     console.log(`[API] Date Range: ${fromDateOnly.toISOString().split('T')[0]} to ${toDateOnly.toISOString().split('T')[0]}`);
 
     // Fetch Botpress API analytics data
@@ -70,8 +76,8 @@ export async function GET(request: NextRequest) {
     const leadsData = await prisma.leads.findMany({
       where: {
         createdAt: {
-          gte: new Date(fromDateOnly),
-          lte: new Date(toDateOnly),
+          gte: fromDateOnly,
+          lte: toDateOnly,
         },
       },
       select: {
@@ -153,31 +159,38 @@ export async function GET(request: NextRequest) {
     // Aggregate ChatbotAnalytics
     const chatbotByDate: Record<string, {
       date: string;
+      totalCharacters: number;      // NEW: sum of all characters
+      totalMessages: number;         // NEW: sum of all messages
       avgMessageLength: number;
-      count: number;
       personalContactRequested: number;
     }> = chatbotData.reduce((acc: Record<string, any>, item: any) => {
       const dateKey = item.date.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = {
           date: dateKey,
+          totalCharacters: 0,
+          totalMessages: 0,
           avgMessageLength: 0,
-          count: 0,
           personalContactRequested: 0,
         };
       }
-      if (item.avgMessageLength) {
-        acc[dateKey].avgMessageLength += item.avgMessageLength;
-        acc[dateKey].count += 1;
+
+      // Key insight: avgMessageLength × totalMessages = total characters in conversation
+      if (item.avgMessageLength && item.totalMessages) {
+        const conversationTotalChars = item.avgMessageLength * item.totalMessages;
+        acc[dateKey].totalCharacters += conversationTotalChars;
+        acc[dateKey].totalMessages += item.totalMessages;
       }
+
       acc[dateKey].personalContactRequested += item.personalContactRequested;
       return acc;
     }, {} as Record<string, any>);
 
-    // Calculate average message length per date
+    // Now calculate the correct average per date
     Object.keys(chatbotByDate).forEach((date) => {
-      if (chatbotByDate[date].count > 0) {
-        chatbotByDate[date].avgMessageLength = chatbotByDate[date].avgMessageLength / chatbotByDate[date].count;
+      if (chatbotByDate[date].totalMessages > 0) {
+        chatbotByDate[date].avgMessageLength =
+          chatbotByDate[date].totalCharacters / chatbotByDate[date].totalMessages;
       }
     });
 
@@ -198,14 +211,12 @@ export async function GET(request: NextRequest) {
       // Check if email exists and is not null/empty
       const hasEmail = item.email && String(item.email).replace(/["\s]/g, '').trim().length > 0;
       
-      if (hasPhone) {
-        contactChannelCounts['Telefon']++;
-      }
-      if (hasEmail) {
-        contactChannelCounts['E-Mail']++;
-      }
       if (hasPhone && hasEmail) {
         contactChannelCounts['Beides']++;
+      } else if (hasPhone) {
+        contactChannelCounts['Telefon']++;
+      } else if (hasEmail) {
+        contactChannelCounts['E-Mail']++;
       }
     }
 
@@ -328,8 +339,14 @@ export async function GET(request: NextRequest) {
     const leadsByDate: Record<string, {
       date: string;
       leadsCount: number;
-    }> = leadsDataForPostalCodes.reduce((acc: Record<string, any>, item: any) => {
-      const dateKey = item.createdAt.toISOString().split('T')[0];
+    }> = leadsData.reduce((acc: Record<string, any>, item: any) => {
+      // const dateKey = item.createdAt.toISOString().split('T')[0];
+
+      // Use createdAt for leads since date is a timestamp
+      const dateKey = item.createdAt instanceof Date
+        ? item.createdAt.toISOString().split('T')[0]
+        : String(item.createdAt).split('T')[0];
+
       if (!acc[dateKey]) {
         acc[dateKey] = {
           date: dateKey,
@@ -341,14 +358,22 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any>);
 
     // Count total leads as personal contact requests (all leads, regardless of date range)
-    const personalContactRequested = leadsDataForPostalCodes.length;
+    const personalContactRequested = leadsData.length;
     
     console.log(`[Leads] Total leads found: ${personalContactRequested}`);
 
     // Sum avg_message_length
-    const totalAvgMessageLength = chatbotData.reduce((sum: number, item: any) => {
-      return sum + (item.avgMessageLength || 0);
-    }, 0);
+    let totalLength = 0;
+    let totalMessages = 0;
+
+    chatbotData.forEach((item: any) => {
+      if (item.avgMessageLength && item.totalMessages) {
+        totalLength += item.avgMessageLength * item.totalMessages;
+        totalMessages += item.totalMessages;
+      }
+    });
+
+    const totalAvgMessageLength = totalMessages > 0 ? totalLength / totalMessages : 0;
 
     // Collect all keywords
     const allKeywords: string[] = [];
@@ -406,157 +431,93 @@ export async function GET(request: NextRequest) {
     toDateTime.setHours(23, 59, 59, 999);
 
     const sankeyRawData = await prisma.$queryRaw<{ source: string; target: string; value: number }[]>`
-      -- Step 1: booking_started -> contact_method
-      SELECT
-        'booking_started' AS source,
-        CONCAT('contact_method_', a.activity_data) AS target,
-        COUNT(DISTINCT a.execution_id) AS value
-      FROM workflow_activity_logs a
-      WHERE a.activity = 'booking_contact_method_selected'
-        AND a.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-      GROUP BY a.activity_data
+WITH BaseEvents AS (
+  SELECT 
+    execution_id,
+    conversation_id,
+    activity,
+    created_at,
+    CASE
+      WHEN LOWER(activity_data) IN ('telefon', 'phone') THEN 'contact_method_phone'
+      WHEN LOWER(activity_data) IN ('e-mail', 'email') THEN 'contact_method_email'
+      WHEN LOWER(activity_data) IN ('beides', 'both') THEN 'contact_method_both'
+      ELSE 'contact_method_other'
+    END AS contact_label,
+    CASE
+      WHEN LOWER(activity_data) IN ('b2b', 'business', 'geschäftskunde', 'geschäftskunde (b2b)') THEN 'customer_type_b2b'
+      WHEN LOWER(activity_data) IN ('b2c', 'private', 'privatkunde', 'privatkunden') THEN 'customer_type_b2c'
+      ELSE 'customer_type_other'
+    END AS type_label
+  FROM workflow_activity_logs
+  WHERE created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+)
 
-      UNION ALL
+-- 1. START -> CONTACT METHOD
+SELECT 'booking_started' AS source, contact_label AS target, COUNT(DISTINCT execution_id) AS value
+FROM BaseEvents WHERE activity = 'booking_contact_method_selected'
+GROUP BY contact_label
 
-      -- Step 2: contact_method -> details_collected
-      SELECT
-        CONCAT('contact_method_', cm.activity_data) AS source,
-        'details_collected' AS target,
-        COUNT(DISTINCT cm.execution_id) AS value
-      FROM workflow_activity_logs cm
-      WHERE cm.activity = 'booking_contact_method_selected'
-        AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        AND EXISTS (
-          SELECT 1 FROM workflow_activity_logs details
-          WHERE details.execution_id = cm.execution_id
-          AND details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
-          AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-      GROUP BY cm.activity_data
+UNION ALL
 
-      UNION ALL
+-- 2. CONTACT METHOD -> DETAILS COLLECTED
+SELECT contact_label AS source, 'details_collected' AS target, COUNT(DISTINCT execution_id) AS value
+FROM BaseEvents be
+WHERE activity = 'booking_contact_method_selected'
+AND EXISTS (
+    SELECT 1 FROM workflow_activity_logs d 
+    WHERE d.execution_id = be.execution_id 
+    AND d.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+)
+GROUP BY contact_label
 
-      -- Step 3: details_collected -> customer_type (B2B/B2C)
-      SELECT
-        'details_collected' AS source,
-        CASE 
-          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
-          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
-          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
-        END AS target,
-        COUNT(DISTINCT ct.execution_id) AS value
-      FROM workflow_activity_logs ct
-      WHERE ct.activity = 'customer_type_selected'
-        AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        AND EXISTS (
-          SELECT 1 FROM workflow_activity_logs cm
-          WHERE cm.execution_id = ct.execution_id
-          AND cm.activity = 'booking_contact_method_selected'
-          AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-      GROUP BY 
-        CASE 
-          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
-          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
-          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
-        END
+UNION ALL
 
-      UNION ALL
+-- 3. DETAILS COLLECTED -> CUSTOMER TYPE
+SELECT 'details_collected' AS source, type_label AS target, COUNT(DISTINCT execution_id) AS value
+FROM BaseEvents
+WHERE activity = 'customer_type_selected'
+GROUP BY type_label
 
-      -- Step 4: customer_type -> final outcome (lead_created or dropped)
-      SELECT
-        CASE 
-          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
-          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
-          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
-        END AS source,
-        CASE
-          WHEN l.workflow_execution_id IS NOT NULL THEN 'lead_created'
-          WHEN c.execution_id IS NOT NULL THEN 'booking_cancelled'
-          ELSE 'dropped'
-        END AS target,
-        COUNT(DISTINCT ct.execution_id) AS value
-      FROM workflow_activity_logs ct
-      LEFT JOIN leads l
-        ON ct.execution_id = l.workflow_execution_id
-      LEFT JOIN workflow_activity_logs c
-        ON ct.execution_id = c.execution_id
-        AND c.activity = 'booking_cancelled'
-        AND c.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-      WHERE ct.activity = 'customer_type_selected'
-        AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-      GROUP BY 
-        CASE 
-          WHEN LOWER(ct.activity_data) IN ('b2b', 'business', 'geschäftskunden') THEN 'customer_type_business'
-          WHEN LOWER(ct.activity_data) IN ('b2c', 'private', 'privatkunden') THEN 'customer_type_private'
-          ELSE CONCAT('customer_type_', LOWER(ct.activity_data))
-        END,
-        CASE
-          WHEN l.workflow_execution_id IS NOT NULL THEN 'lead_created'
-          WHEN c.execution_id IS NOT NULL THEN 'booking_cancelled'
-          ELSE 'dropped'
-        END
+UNION ALL
 
-      UNION ALL
+-- 4. CUSTOMER TYPE -> FINAL OUTCOME (Leads vs Dropped)
+SELECT 
+  be.type_label AS source,
+  CASE 
+    WHEN l.id IS NOT NULL THEN 'lead_created'
+    ELSE 'dropped'
+  END AS target,
+  COUNT(DISTINCT be.execution_id) AS value
+FROM BaseEvents be
+LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id OR be.conversation_id = l.conversation_id
+WHERE be.activity = 'customer_type_selected'
+GROUP BY be.type_label, target
 
-      -- Handle cases where users drop after contact method but before details
-      SELECT
-        CONCAT('contact_method_', cm.activity_data) AS source,
-        'dropped' AS target,
-        COUNT(DISTINCT cm.execution_id) AS value
-      FROM workflow_activity_logs cm
-      WHERE cm.activity = 'booking_contact_method_selected'
-        AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        AND NOT EXISTS (
-          SELECT 1 FROM workflow_activity_logs details
-          WHERE details.execution_id = cm.execution_id
-          AND details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
-          AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM leads l WHERE l.workflow_execution_id = cm.execution_id
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM workflow_activity_logs cancel
-          WHERE cancel.execution_id = cm.execution_id
-          AND cancel.activity = 'booking_cancelled'
-          AND cancel.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-      GROUP BY cm.activity_data
+UNION ALL
 
-      UNION ALL
+-- 5. DROP-OFF FROM CONTACT METHOD (Includes manual cancellations)
+SELECT contact_label AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
+FROM BaseEvents be
+WHERE activity = 'booking_contact_method_selected'
+AND NOT EXISTS (
+    SELECT 1 FROM workflow_activity_logs d 
+    WHERE d.execution_id = be.execution_id 
+    AND d.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+)
+GROUP BY contact_label
 
-      -- Handle cases where users drop after details but before customer_type
-      SELECT
-        'details_collected' AS source,
-        'dropped' AS target,
-        COUNT(DISTINCT details.execution_id) AS value
-      FROM workflow_activity_logs details
-      WHERE details.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
-        AND details.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        AND EXISTS (
-          SELECT 1 FROM workflow_activity_logs cm
-          WHERE cm.execution_id = details.execution_id
-          AND cm.activity = 'booking_contact_method_selected'
-          AND cm.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM workflow_activity_logs ct
-          WHERE ct.execution_id = details.execution_id
-          AND ct.activity = 'customer_type_selected'
-          AND ct.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM leads l WHERE l.workflow_execution_id = details.execution_id
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM workflow_activity_logs cancel
-          WHERE cancel.execution_id = details.execution_id
-          AND cancel.activity = 'booking_cancelled'
-          AND cancel.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
-        )
-      HAVING COUNT(DISTINCT details.execution_id) > 0;
-      `;
+UNION ALL
+
+-- 6. DROP-OFF FROM DETAILS (Includes manual cancellations)
+SELECT 'details_collected' AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
+FROM BaseEvents d
+WHERE activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+AND NOT EXISTS (
+    SELECT 1 FROM BaseEvents ct 
+    WHERE ct.execution_id = d.execution_id AND ct.activity = 'customer_type_selected'
+)
+GROUP BY target;
+`;
     console.log("RAW SANKEY DATA", sankeyRawData);
 
     const labels = Array.from(
