@@ -22,8 +22,18 @@ import { VermarktungsregionenChart } from '@/components/overview/Vermarktungsreg
 import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
-import { BookingSankeyChart } from '@/components/overview/SankeyChart';
-import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
+// import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
+
+import dynamic from "next/dynamic";
+
+const BookingSankeyChartPlotly = dynamic(
+  () =>
+    import("@/components/overview/SankeyChartPlotly").then(
+      (mod) => mod.BookingSankeyChartPlotly
+    ),
+  { ssr: false }
+);
+
 
 interface OverviewData {
   botpressByDate: Array<{
