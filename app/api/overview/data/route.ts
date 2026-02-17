@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 
     if (toDate) {
       const [year, month, day] = toDate.split('-').map(Number);
-      to = new Date(year, month - 1, day, 0, 0, 0, 0); // Set to start of day for clean math
+      to = new Date(year, month - 1, day, 23, 59, 59, 999); // Set to end of day for inclusive filtering
     } else {
       to = new Date();
-      to.setHours(0, 0, 0, 0);
+      to.setHours(23, 59, 59, 999);
     }
 
     // Convert to UTC dates for database comparison
@@ -78,6 +78,9 @@ export async function GET(request: NextRequest) {
         createdAt: {
           gte: fromDateOnly,
           lte: toDateOnly,
+        },
+        workflowExecutionId: {
+          not: null, // ONLY fetch leads that came from a workflow
         },
       },
       select: {
@@ -481,21 +484,22 @@ GROUP BY type_label
 UNION ALL
 
 -- 4. CUSTOMER TYPE -> FINAL OUTCOME (Leads vs Dropped)
+-- Strictly enforce that a lead must exist WITH a matching workflow_execution_id
 SELECT 
   be.type_label AS source,
   CASE 
-    WHEN l.id IS NOT NULL THEN 'lead_created'
+    WHEN l.id IS NOT NULL AND l.workflow_execution_id IS NOT NULL THEN 'lead_created'
     ELSE 'dropped'
   END AS target,
   COUNT(DISTINCT be.execution_id) AS value
 FROM BaseEvents be
-LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id OR be.conversation_id = l.conversation_id
+LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id
 WHERE be.activity = 'customer_type_selected'
 GROUP BY be.type_label, target
 
 UNION ALL
 
--- 5. DROP-OFF FROM CONTACT METHOD (Includes manual cancellations)
+-- 5. DROP-OFF FROM CONTACT METHOD
 SELECT contact_label AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
 FROM BaseEvents be
 WHERE activity = 'booking_contact_method_selected'
@@ -508,7 +512,7 @@ GROUP BY contact_label
 
 UNION ALL
 
--- 6. DROP-OFF FROM DETAILS (Includes manual cancellations)
+-- 6. DROP-OFF FROM DETAILS
 SELECT 'details_collected' AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
 FROM BaseEvents d
 WHERE activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
