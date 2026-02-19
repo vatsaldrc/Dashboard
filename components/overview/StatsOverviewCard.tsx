@@ -3,20 +3,25 @@
 import { CompactStatsCard } from './CompactStatsCard';
 
 interface StatsOverviewCardProps {
-  avgMessageLength: number;
+  avgWordsPerMessage: number;
   personalContactRequested: number;
+  bookingStartedCount: number;
 }
 
-export function StatsOverviewCard({ avgMessageLength, personalContactRequested }: StatsOverviewCardProps) {
+export function StatsOverviewCard({ avgWordsPerMessage, personalContactRequested, bookingStartedCount }: StatsOverviewCardProps) {
   return (
     <CompactStatsCard
       stats={[
         {
-          title: 'Summe Avg. Message Length',
-          value: avgMessageLength.toFixed(2),
+          title: "Avg Anzahl Wörter pro Nachricht",
+          value: avgWordsPerMessage.toFixed(1),
         },
         {
-          title: 'Anzahl Beratungsgesuche',
+          title: "Anzahl Beratungsgesuche",
+          value: bookingStartedCount,
+        },
+        {
+          title: "Anzahl Leads",
           value: personalContactRequested,
         },
       ]}

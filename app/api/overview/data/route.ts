@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
           gte: fromDateOnly,
           lte: toDateOnly,
         },
-        workflowExecutionId: {
-          not: null, // ONLY fetch leads that came from a workflow
-        },
+        // workflowExecutionId: {
+        //   not: null, // ONLY fetch leads that came from a workflow
+        // },
       },
       select: {
         id: true,
@@ -100,6 +100,17 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'asc',
+      },
+    });
+
+    // Count booking started from workflow_execution_logs table
+    const bookingStartedCount = await prisma.workflowExecutionLog.count({
+      where: {
+        workflowId: 'wf-b493aa0010',
+        startedAt: {
+          gte: fromDateOnly,
+          lte: toDateOnly,
+        },
       },
     });
 
@@ -366,17 +377,31 @@ export async function GET(request: NextRequest) {
     console.log(`[Leads] Total leads found: ${personalContactRequested}`);
 
     // Sum avg_message_length
-    let totalLength = 0;
+    // let totalLength = 0;
+    // let totalMessages = 0;
+
+    // chatbotData.forEach((item: any) => {
+    //   if (item.avgMessageLength && item.totalMessages) {
+    //     totalLength += item.avgMessageLength * item.totalMessages;
+    //     totalMessages += item.totalMessages;
+    //   }
+    // });
+
+    // const totalAvgMessageLength = totalMessages > 0 ? totalLength / totalMessages : 0;
+
+    let totalWords = 0;
     let totalMessages = 0;
 
     chatbotData.forEach((item: any) => {
       if (item.avgMessageLength && item.totalMessages) {
-        totalLength += item.avgMessageLength * item.totalMessages;
+        // Estimate words from characters: average word length ~5 characters + 1 space
+        const estimatedWords = (item.avgMessageLength / 6) * item.totalMessages;
+        totalWords += estimatedWords;
         totalMessages += item.totalMessages;
       }
     });
 
-    const totalAvgMessageLength = totalMessages > 0 ? totalLength / totalMessages : 0;
+    const avgWordsPerMessage = totalMessages > 0 ? totalWords / totalMessages : 0;
 
     // Collect all keywords
     const allKeywords: string[] = [];
@@ -433,6 +458,96 @@ export async function GET(request: NextRequest) {
     const toDateTime = new Date(toDateOnly);
     toDateTime.setHours(23, 59, 59, 999);
 
+//     const sankeyRawData = await prisma.$queryRaw<{ source: string; target: string; value: number }[]>`
+// WITH BaseEvents AS (
+//   SELECT 
+//     execution_id,
+//     conversation_id,
+//     activity,
+//     created_at,
+//     CASE
+//       WHEN LOWER(activity_data) IN ('telefon', 'phone') THEN 'contact_method_phone'
+//       WHEN LOWER(activity_data) IN ('e-mail', 'email') THEN 'contact_method_email'
+//       WHEN LOWER(activity_data) IN ('beides', 'both') THEN 'contact_method_both'
+//       ELSE 'contact_method_other'
+//     END AS contact_label,
+//     CASE
+//       WHEN LOWER(activity_data) IN ('b2b', 'business', 'geschäftskunde', 'geschäftskunde (b2b)') THEN 'customer_type_b2b'
+//       WHEN LOWER(activity_data) IN ('b2c', 'private', 'privatkunde', 'privatkunden') THEN 'customer_type_b2c'
+//       ELSE 'customer_type_other'
+//     END AS type_label
+//   FROM workflow_activity_logs
+//   WHERE created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+// )
+
+// -- 1. START -> CONTACT METHOD
+// SELECT 'booking_started' AS source, contact_label AS target, COUNT(DISTINCT execution_id) AS value
+// FROM BaseEvents WHERE activity = 'booking_contact_method_selected'
+// GROUP BY contact_label
+
+// UNION ALL
+
+// -- 2. CONTACT METHOD -> DETAILS COLLECTED
+// SELECT contact_label AS source, 'details_collected' AS target, COUNT(DISTINCT execution_id) AS value
+// FROM BaseEvents be
+// WHERE activity = 'booking_contact_method_selected'
+// AND EXISTS (
+//     SELECT 1 FROM workflow_activity_logs d 
+//     WHERE d.execution_id = be.execution_id 
+//     AND d.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+// )
+// GROUP BY contact_label
+
+// UNION ALL
+
+// -- 3. DETAILS COLLECTED -> CUSTOMER TYPE
+// SELECT 'details_collected' AS source, type_label AS target, COUNT(DISTINCT execution_id) AS value
+// FROM BaseEvents
+// WHERE activity = 'customer_type_selected'
+// GROUP BY type_label
+
+// UNION ALL
+
+// -- 4. CUSTOMER TYPE -> FINAL OUTCOME (Leads vs Dropped)
+// -- Strictly enforce that a lead must exist WITH a matching workflow_execution_id
+// SELECT 
+//   be.type_label AS source,
+//   CASE 
+//     WHEN l.id IS NOT NULL AND l.workflow_execution_id IS NOT NULL THEN 'lead_created'
+//     ELSE 'dropped'
+//   END AS target,
+//   COUNT(DISTINCT be.execution_id) AS value
+// FROM BaseEvents be
+// LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id
+// WHERE be.activity = 'customer_type_selected'
+// GROUP BY be.type_label, target
+
+// UNION ALL
+
+// -- 5. DROP-OFF FROM CONTACT METHOD
+// SELECT contact_label AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
+// FROM BaseEvents be
+// WHERE activity = 'booking_contact_method_selected'
+// AND NOT EXISTS (
+//     SELECT 1 FROM workflow_activity_logs d 
+//     WHERE d.execution_id = be.execution_id 
+//     AND d.activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+// )
+// GROUP BY contact_label
+
+// UNION ALL
+
+// -- 6. DROP-OFF FROM DETAILS
+// SELECT 'details_collected' AS source, 'dropped' AS target, COUNT(DISTINCT execution_id) AS value
+// FROM BaseEvents d
+// WHERE activity IN ('full_name_collected', 'phone_collected', 'email_collected', 'postal_code_collected')
+// AND NOT EXISTS (
+//     SELECT 1 FROM BaseEvents ct 
+//     WHERE ct.execution_id = d.execution_id AND ct.activity = 'customer_type_selected'
+// )
+// GROUP BY target;
+// `;
+    
     const sankeyRawData = await prisma.$queryRaw<{ source: string; target: string; value: number }[]>`
 WITH BaseEvents AS (
   SELECT 
@@ -462,6 +577,20 @@ GROUP BY contact_label
 
 UNION ALL
 
+-- 1b. START -> DROPPED (workflows that never selected contact method)
+SELECT 'booking_started' AS source, 'dropped' AS target, COUNT(DISTINCT w.execution_id) AS value
+FROM workflow_execution_logs w
+WHERE w.workflow_id = 'wf-b493aa0010'
+  AND w.started_at BETWEEN ${fromDateTime} AND ${toDateTime}
+  AND NOT EXISTS (
+    SELECT 1 FROM workflow_activity_logs a
+    WHERE a.execution_id = w.execution_id
+    AND a.activity = 'booking_contact_method_selected'
+    AND a.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+  )
+
+UNION ALL
+
 -- 2. CONTACT METHOD -> DETAILS COLLECTED
 SELECT contact_label AS source, 'details_collected' AS target, COUNT(DISTINCT execution_id) AS value
 FROM BaseEvents be
@@ -484,7 +613,6 @@ GROUP BY type_label
 UNION ALL
 
 -- 4. CUSTOMER TYPE -> FINAL OUTCOME (Leads vs Dropped)
--- Strictly enforce that a lead must exist WITH a matching workflow_execution_id
 SELECT 
   be.type_label AS source,
   CASE 
@@ -496,6 +624,33 @@ FROM BaseEvents be
 LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id
 WHERE be.activity = 'customer_type_selected'
 GROUP BY be.type_label, target
+
+UNION ALL
+
+-- 4b. LEADS WITH NO customer_type_selected ACTIVITY (workflow logging gap)
+SELECT
+  CASE
+    WHEN LOWER(l.customer_type) IN ('b2b') THEN 'customer_type_b2b'
+    WHEN LOWER(l.customer_type) IN ('b2c') THEN 'customer_type_b2c'
+    ELSE 'customer_type_other'
+  END AS source,
+  'lead_created' AS target,
+  COUNT(DISTINCT l.workflow_execution_id) AS value
+FROM leads l
+WHERE l.workflow_execution_id IS NOT NULL
+  AND l.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+  AND NOT EXISTS (
+    SELECT 1 FROM workflow_activity_logs wa
+    WHERE wa.execution_id = l.workflow_execution_id
+    AND wa.activity = 'customer_type_selected'
+    AND wa.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+  )
+GROUP BY
+  CASE
+    WHEN LOWER(l.customer_type) IN ('b2b') THEN 'customer_type_b2b'
+    WHEN LOWER(l.customer_type) IN ('b2c') THEN 'customer_type_b2c'
+    ELSE 'customer_type_other'
+  END
 
 UNION ALL
 
@@ -562,8 +717,9 @@ GROUP BY target;
         totalMessages: botpressData.reduce((sum: number, item: any) => sum + item.totalMessages, 0),
         userMessages: botpressData.reduce((sum: number, item: any) => sum + item.userMessages, 0),
         botMessages: botpressData.reduce((sum: number, item: any) => sum + item.botMessages, 0),
-        avgMessageLength: totalAvgMessageLength,
+        avgWordsPerMessage: avgWordsPerMessage,
         personalContactRequested,
+        bookingStartedCount,
       },
       sentimentCounts,
       contactChannelCounts,
