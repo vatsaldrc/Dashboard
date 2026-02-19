@@ -616,12 +616,14 @@ UNION ALL
 SELECT 
   be.type_label AS source,
   CASE 
-    WHEN l.id IS NOT NULL AND l.workflow_execution_id IS NOT NULL THEN 'lead_created'
+    WHEN l.id IS NOT NULL THEN 'lead_created'
     ELSE 'dropped'
   END AS target,
   COUNT(DISTINCT be.execution_id) AS value
 FROM BaseEvents be
-LEFT JOIN leads l ON be.execution_id = l.workflow_execution_id
+LEFT JOIN leads l 
+ON be.execution_id = l.workflow_execution_id
+   OR be.conversation_id = l.conversation_id
 WHERE be.activity = 'customer_type_selected'
 GROUP BY be.type_label, target
 
@@ -635,22 +637,16 @@ SELECT
     ELSE 'customer_type_other'
   END AS source,
   'lead_created' AS target,
-  COUNT(DISTINCT l.workflow_execution_id) AS value
+  COUNT(DISTINCT l.id) AS value -- FIX: Use l.id instead of workflow_execution_id
 FROM leads l
-WHERE l.workflow_execution_id IS NOT NULL
-  AND l.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+WHERE l.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
   AND NOT EXISTS (
     SELECT 1 FROM workflow_activity_logs wa
-    WHERE wa.execution_id = l.workflow_execution_id
+    WHERE (wa.execution_id = l.workflow_execution_id OR wa.conversation_id = l.conversation_id) -- Robust check
     AND wa.activity = 'customer_type_selected'
     AND wa.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
   )
-GROUP BY
-  CASE
-    WHEN LOWER(l.customer_type) IN ('b2b') THEN 'customer_type_b2b'
-    WHEN LOWER(l.customer_type) IN ('b2c') THEN 'customer_type_b2c'
-    ELSE 'customer_type_other'
-  END
+GROUP BY 1
 
 UNION ALL
 
