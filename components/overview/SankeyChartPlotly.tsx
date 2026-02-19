@@ -29,16 +29,16 @@ export function BookingSankeyChartPlotly({
   const formatNodeLabel = (id: string): string => {
     const labelMap: Record<string, string> = {
       start: "↓",
-      booking_started: "Booking Started",
-      contact_method_phone: "Phone",
-      contact_method_email: "Email",
-      contact_method_both: "Both",
-      details_collected: "Details Collected",
-      customer_type_b2b: "Business (B2B)",
-      customer_type_b2c: "Private (B2C)",
-      lead_created: "Lead Created",
-      booking_cancelled: "Cancelled",
-      dropped: "Dropped Off",
+      booking_started: "Persönliche Beratung gedrückt",
+      contact_method_phone: "Telefon",
+      contact_method_email: "E-Mail",
+      contact_method_both: "Beides",
+      details_collected: "Weitere Datenaufnahme",
+      customer_type_b2b: "Geschäftskunde",
+      customer_type_b2c: "Privatkunde",
+      lead_created: "Lead erstellt",
+      booking_cancelled: "Abgebrochen",
+      dropped: "Vorzeitig ausgestiegen",
     };
     return labelMap[id] || id;
   };
@@ -133,8 +133,8 @@ export function BookingSankeyChartPlotly({
 
   return (
     <div className={styles.card}>
-      <h3 className={styles.title}>Buchungsfluss-Reise</h3>
-      <p className={styles.subtitle}>Vom Erstkontakt bis zum Endergebnis</p>
+      <h3 className={styles.title}>Flow der Beratungsgesuche</h3>
+      <p className={styles.subtitle}>Vom Trigger bis zum Lead</p>
       <div
         style={{
           height: 600,

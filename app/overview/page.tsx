@@ -22,7 +22,6 @@ import { VermarktungsregionenChart } from '@/components/overview/Vermarktungsreg
 import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
-import { BookingSankeyChart } from '@/components/overview/SankeyChart';
 import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
 
 interface OverviewData {
@@ -50,8 +49,9 @@ interface OverviewData {
     totalMessages: number;
     userMessages: number;
     botMessages: number;
-    avgMessageLength: number;
+    avgWordsPerMessage: number;
     personalContactRequested: number;
+    bookingStartedCount: number;
   };
   sentimentCounts: Record<string, number>;
   contactChannelCounts: Record<string, number>;
@@ -203,13 +203,14 @@ export default function OverviewPage() {
               total={data.totals.botMessages}
               dataByDate={data.botpressByDate}
             /> */}
+            <StatsOverviewCard
+              avgWordsPerMessage={data.totals.avgWordsPerMessage}
+              personalContactRequested={data.totals.personalContactRequested}
+              bookingStartedCount={data.totals.bookingStartedCount}
+            />
             <PersonalContactRequestsChart
               total={data.totals.personalContactRequested}
               dataByDate={data.personalContactRequestedByDate}
-            />
-            <StatsOverviewCard
-              avgMessageLength={data.totals.avgMessageLength}
-              personalContactRequested={data.totals.personalContactRequested}
             />
             <SentimentChart data={data.sentimentCounts} />
             <ContactChannelChart data={data.contactChannelCounts} />

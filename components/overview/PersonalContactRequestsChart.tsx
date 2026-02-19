@@ -14,6 +14,6 @@ export function PersonalContactRequestsChart({ total, dataByDate }: PersonalCont
   }));
 
   return (
-    <BarChart title="Anzahl Beratungsgesuche" data={chartData} color="#ec4899" total={total} />
+    <BarChart title="Anzahl Leads" data={chartData} color="#ec4899" total={total} />
   );
 }
