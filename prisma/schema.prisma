@@ -106,3 +106,23 @@ model Leads {
     @@index([status])
     @@map("leads")
 }
+
+
+model workflowExecutionLog {
+  id                Int      @id @default(autoincrement())
+  workflowId         String   @map("workflow_id") @db.VarChar(100)
+  executionId        String   @unique @map("execution_id") @db.VarChar(36)
+  parentExecutionId  String?  @map("parent_execution_id") @db.VarChar(36)
+  triggerType        String   @map("trigger_type") @db.VarChar(20)
+  userId             String?  @map("user_id") @db.VarChar(100)
+  conversationId     String?  @map("conversation_id") @db.VarChar(255)
+  channel            String?  @map("channel") @db.VarChar(50)
+  startedAt          DateTime @map("started_at") @db.DateTime(0)
+  loggedAt           DateTime? @default(now()) @map("logged_at") @db.DateTime(0)
+
+  @@map("workflow_execution_logs")
+  @@index([workflowId, startedAt])
+  @@index([userId])
+  @@index([workflowId])
+  @@index([conversationId])
+}
