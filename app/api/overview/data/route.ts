@@ -261,7 +261,6 @@ export async function GET(request: NextRequest) {
         rawPostalCodes.add(String(item.postalCode));
       }
     }
-    console.log(`[PLZ Debug] Raw postal codes from leads table: ${Array.from(rawPostalCodes).map(p => JSON.stringify(p)).join(', ')}`);
 
     // Aggregate postal codes from leads table - display postal codes (cleaned) - date-filtered
     const customerRegionCounts: Record<string, number> = {};
@@ -278,9 +277,6 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    console.log(`[PLZ Debug] Cleaned postal codes for PLZ chart: ${Object.keys(customerRegionCounts).map(p => JSON.stringify(p)).join(', ')}`);
-    console.log(`[PLZ Debug] PLZ chart counts:`, customerRegionCounts);
-
     // Aggregate Vermarktungsregionen (marketing regions) by mapping postal codes from leads table to their "map" column - date-filtered
     const postalCodes = new Set<string>();
     for (const item of leadsData) {
@@ -295,8 +291,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`[Vermarktungsregionen] Found ${postalCodes.size} unique postal codes: ${Array.from(postalCodes).join(', ')}`);
-
     // Get mapping from postal_mp table
     const postalMappings = await prisma.postalMP.findMany({
       where: {
@@ -306,18 +300,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`[Vermarktungsregionen] Found ${postalMappings.length} mappings in postal_mp table`);
-    postalMappings.forEach((mapping: any) => {
-      console.log(`[Vermarktungsregionen] ✓ ${mapping.postalCode} → ${mapping.mp}`);
-    });
-
     // Create postal code to region map
     const postalToMapRegion: Record<string, string> = {};
     for (const mapping of postalMappings) {
       postalToMapRegion[mapping.postalCode] = mapping.mp;
     }
-
-    console.log(`[Vermarktungsregionen] Created mapping with ${Object.keys(postalToMapRegion).length} entries`);
 
     // Aggregate by map region - include all postal codes (date-filtered)
     const vermarktungsregionenCounts: Record<string, number> = {};
@@ -334,20 +321,15 @@ export async function GET(request: NextRequest) {
           if (postalToMapRegion[cleanedPostalCode]) {
             const mapRegion = postalToMapRegion[cleanedPostalCode];
             mappedCount.mapped++;
-            console.log(`[Vermarktungsregionen] ✓ ${cleanedPostalCode} → ${mapRegion}`);
             vermarktungsregionenCounts[mapRegion] = (vermarktungsregionenCounts[mapRegion] || 0) + 1;
           } else {
             // Postal code NOT found in mapping - map to "National Sales"
             mappedCount.unmapped++;
-            console.log(`[Vermarktungsregionen] ✗ ${cleanedPostalCode} → National Sales (not in mapping)`);
             vermarktungsregionenCounts['National Sales'] = (vermarktungsregionenCounts['National Sales'] || 0) + 1;
           }
         }
       }
     }
-
-    console.log(`[Vermarktungsregionen] Aggregation complete: ${mappedCount.mapped} mapped, ${mappedCount.unmapped} unmapped`);
-    console.log(`[Vermarktungsregionen] Final regions:`, Object.entries(vermarktungsregionenCounts).map(([region, count]) => `${region} (${count})`).join(', '));
 
     // Aggregate Leads by date (for ALL leads, regardless of date range - to show complete chart)
     const leadsByDate: Record<string, {
@@ -389,15 +371,44 @@ export async function GET(request: NextRequest) {
 
     // const totalAvgMessageLength = totalMessages > 0 ? totalLength / totalMessages : 0;
 
-    let totalWords = 0;
-    let totalMessages = 0;
+    // Calculate average words per message from messages table (incoming messages only)
+    const incomingMessages = await prisma.messages.findMany({
+      where: {
+        direction: 'incoming',
+        createdAt: {
+          gte: fromDateOnly,
+          lte: toDateOnly,
+        },
+      },
+      select: {
+        payload: true,
+      },
+    });
 
-    chatbotData.forEach((item: any) => {
-      if (item.avgMessageLength && item.totalMessages) {
-        // Estimate words from characters: average word length ~5 characters + 1 space
-        const estimatedWords = (item.avgMessageLength / 6) * item.totalMessages;
-        totalWords += estimatedWords;
-        totalMessages += item.totalMessages;
+    let totalWords = 0;
+    let totalMessages = incomingMessages.length;
+
+    incomingMessages.forEach((message: any) => {
+      if (message.payload) {
+        try {
+          // Parse payload JSON to get text content
+          const payload = typeof message.payload === 'string'
+            ? JSON.parse(message.payload)
+            : message.payload;
+
+          // Extract text from payload (structure: { "type": "text", "text": "..." })
+          const text = payload.text || '';
+
+          // Count words (split by whitespace and filter empty strings)
+          const wordCount = text.trim().split(/\s+/).filter((word: string) => word.length > 0).length;
+          totalWords += wordCount;
+        } catch (error) {
+          // If payload parsing fails, skip this message
+          console.error('Error parsing message payload:', error);
+          totalMessages--; // Reduce count if message couldn't be parsed
+        }
+      } else {
+        totalMessages--; // Reduce count if payload is null
       }
     });
 
@@ -673,7 +684,6 @@ AND NOT EXISTS (
 )
 GROUP BY target;
 `;
-    console.log("RAW SANKEY DATA", sankeyRawData);
 
     const labels = Array.from(
       new Set(
