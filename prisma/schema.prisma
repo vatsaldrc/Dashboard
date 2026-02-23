@@ -126,3 +126,20 @@ model workflowExecutionLog {
   @@index([workflowId])
   @@index([conversationId])
 }
+
+
+model messages {
+  id             String    @id @db.VarChar(255)
+  conversationId String    @map("conversation_id") @db.VarChar(255)
+  type           String?   @db.VarChar(255)
+  direction      String?   @db.VarChar(20)
+  userId         String?   @map("user_id") @db.VarChar(255)
+  payload        String?   @db.LongText
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime? @map("updated_at")
+  syncDate       DateTime? @map("sync_date") @db.Date
+
+  @@index([conversationId])
+  @@index([syncDate])
+  @@map("messages")
+}
