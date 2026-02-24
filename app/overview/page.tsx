@@ -229,7 +229,7 @@ export default function OverviewPage() {
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
             <BookingSankeyChartPlotly data={data.sankeyData} />
-            <WordCloud words={data.wordCloudData} />
+            {data.wordCloudData && data.wordCloudData?.length > 0 && <WordCloud words={data.wordCloudData} />}
             <SummaryList summaries={data.summaries} />
           </div>
         </div>
