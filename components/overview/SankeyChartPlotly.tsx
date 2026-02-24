@@ -62,16 +62,28 @@ export function BookingSankeyChartPlotly({
        data.nodes.map((node, idx) => [node.id, idx]),
      );
 
+     const sortedNodes = [...data.nodes].sort((a, b) => {
+       if (a.id === "lead_created") return -1;
+       if (b.id === "lead_created") return 1;
+       if (a.id === "dropped") return 1;
+       if (b.id === "dropped") return -1;
+       return 0;
+     });
+
+     const sortedNodeIndexMap = new Map(
+       sortedNodes.map((node, idx) => [node.id, idx]),
+     );
+
      // Prepare node data
-     const nodeLabels = data.nodes.map((node) => formatNodeLabel(node.id));
-     const nodeColors = data.nodes.map((node) => getNodeColor(node.id));
+     const nodeLabels = sortedNodes.map((node) => formatNodeLabel(node.id));
+     const nodeColors = sortedNodes.map((node) => getNodeColor(node.id));
 
      // Prepare link data
      const linkSources = data.links.map(
-       (link) => nodeIndexMap.get(link.source)!,
+       (link) => sortedNodeIndexMap.get(link.source)!,
      );
      const linkTargets = data.links.map(
-       (link) => nodeIndexMap.get(link.target)!,
+       (link) => sortedNodeIndexMap.get(link.target)!,
      );
      const linkValues = data.links.map((link) => Number(link.value));
 
@@ -93,15 +105,34 @@ export function BookingSankeyChartPlotly({
              color: "#1e293b",
              width: 1,
            },
+           x: sortedNodes.map((node) => {
+             if (node.id === "booking_started") return 0.05;
+
+             if (node.id.startsWith("contact_method_")) return 0.25;
+
+             if (node.id === "details_collected") return 0.45;
+
+             if (node.id.startsWith("customer_type_")) return 0.65;
+
+             if (node.id === "lead_created" || node.id === "dropped")
+               return 1.0;
+
+             return 0.5;
+           }),
+           y: sortedNodes.map((node) => {
+             if (node.id === "lead_created") return 0.2; // higher (top)
+             if (node.id === "dropped") return 0.8; // lower (bottom)
+             return undefined; // let Plotly auto-place others
+           }),
            label: nodeLabels,
            color: nodeColors,
            customdata: data.nodes.map((node, idx) => {
              // Calculate total value for each node
              const incoming = data.links
-               .filter((link) => nodeIndexMap.get(link.target) === idx)
+               .filter((link) => sortedNodeIndexMap.get(link.target) === idx)
                .reduce((sum, link) => sum + Number(link.value), 0);
              const outgoing = data.links
-               .filter((link) => nodeIndexMap.get(link.source) === idx)
+               .filter((link) => sortedNodeIndexMap.get(link.source) === idx)
                .reduce((sum, link) => sum + Number(link.value), 0);
              return Math.max(incoming, outgoing) || 0;
            }),
