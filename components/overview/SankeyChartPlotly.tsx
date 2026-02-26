@@ -170,7 +170,8 @@ export function BookingSankeyChartPlotly({
         style={{
           height: 600,
           width: "100%",
-          overflowX: "auto",
+          overflowX: "hidden",
+          overflowY: "auto",
         }}
       >
         <Plot
@@ -185,12 +186,12 @@ export function BookingSankeyChartPlotly({
             },
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
-            margin: { t: 40, b: 40, l: 100, r: 200 },
+            margin: { t: 80, b: 60, l: 100, r: 200 },
           }}
           config={{
-            displayModeBar: true,
+            displayModeBar: false,
             displaylogo: false,
-            modeBarButtonsToRemove: ["lasso2d", "select2d"],
+            // modeBarButtonsToRemove: ["lasso2d", "select2d"],
             responsive: true,
           }}
           style={{ width: "100%", height: "100%" }}

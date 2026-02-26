@@ -144,7 +144,7 @@ export default function OverviewPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>Overview</h1>
+          <h1 className={styles.title}>VRM Media Sales Chatbot Analytics</h1>
           <div className={styles.userInfo}>
             <span className={styles.userEmail}>{session.user?.email}</span>
             <SignOutButton variant="outline" size="sm" />

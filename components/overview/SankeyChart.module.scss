@@ -7,6 +7,31 @@
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   grid-column: 1 / -1;
+
+  // Custom scrollbar styling (optional)
+  div {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+    
+    /* Chrome/Safari */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--color-border);
+      border-radius: 4px;
+      
+      &:hover {
+        background-color: var(--color-text-secondary);
+      }
+    }
+  }
 }
 
 
