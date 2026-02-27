@@ -112,6 +112,7 @@ export default function SankeyChart({ data }: SankeyChartProps) {
 
       let y = 0;
       colNodes.forEach((node) => {
+        if (node.y0 == null || node.y1 == null) return; // guard
         const h = node.y1 - node.y0;
         node.y0 = y;
         node.y1 = y + h;
