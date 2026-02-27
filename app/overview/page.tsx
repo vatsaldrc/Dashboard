@@ -22,18 +22,8 @@ import { VermarktungsregionenChart } from '@/components/overview/Vermarktungsreg
 import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
-// import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
-
-import dynamic from "next/dynamic";
-
-const BookingSankeyChartPlotly = dynamic(
-  () =>
-    import("@/components/overview/SankeyChartPlotly").then(
-      (mod) => mod.BookingSankeyChartPlotly
-    ),
-  { ssr: false }
-);
-
+import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
+import SankeyChart from '@/components/overview/SankeyD3';
 
 interface OverviewData {
   botpressByDate: Array<{
@@ -155,7 +145,7 @@ export default function OverviewPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>Overview</h1>
+          <h1 className={styles.title}>VRM Media Sales Chatbot Analytics</h1>
           <div className={styles.userInfo}>
             <span className={styles.userEmail}>{session.user?.email}</span>
             <SignOutButton variant="outline" size="sm" />
@@ -228,7 +218,8 @@ export default function OverviewPage() {
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
-            <BookingSankeyChartPlotly data={data.sankeyData} />
+            {/* <BookingSankeyChartPlotly data={data.sankeyData} /> */}
+            <SankeyChart data={data.sankeyData} />
             {data.wordCloudData && data.wordCloudData?.length > 0 && <WordCloud words={data.wordCloudData} />}
             <SummaryList summaries={data.summaries} />
           </div>
