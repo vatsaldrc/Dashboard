@@ -23,6 +23,7 @@ import { WordCloud } from '@/components/overview/WordCloud';
 import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
 import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
+import SankeyChart from '@/components/overview/SankeyD3';
 
 interface OverviewData {
   botpressByDate: Array<{
@@ -217,7 +218,8 @@ export default function OverviewPage() {
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
-            <BookingSankeyChartPlotly data={data.sankeyData} />
+            {/* <BookingSankeyChartPlotly data={data.sankeyData} /> */}
+            <SankeyChart data={data.sankeyData} />
             {data.wordCloudData && data.wordCloudData?.length > 0 && <WordCloud words={data.wordCloudData} />}
             <SummaryList summaries={data.summaries} />
           </div>
