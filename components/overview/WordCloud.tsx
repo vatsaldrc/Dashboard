@@ -9,18 +9,10 @@ interface WordCloudProps {
   words: Array<{ text: string; value: number }>;
 }
 
-// Dynamically import react-wordcloud with no SSR
-const ReactWordcloud = dynamic(
-  () => import('react-wordcloud').then((mod) => {
-    // Handle default export
-    const Component = mod.default || mod;
-    return Component;
-  }),
-  {
-    ssr: false,
-    loading: () => <div className={styles.loading}>Lade Word Cloud...</div>,
-  }
-) as React.ComponentType<{ words: Array<{ text: string; value: number }>; options: any }>;
+const ReactD3Cloud = dynamic(() => import("react-d3-cloud"), {
+  ssr: false,
+  loading: () => <div className={styles.loading}>Lade Word Cloud...</div>,
+}) as any;
 
 function WordCloudContent({ words }: WordCloudProps) {
   const [mounted, setMounted] = useState(false);
@@ -29,10 +21,10 @@ function WordCloudContent({ words }: WordCloudProps) {
     setMounted(true);
   }, []);
 
-  // Validate and format words
-  const validWords = words?.filter(
-    (word) => word && typeof word === 'object' && word.text && typeof word.value === 'number' && word.value > 0
-  ) || [];
+  const validWords =
+    words
+      ?.filter((w) => w?.text && typeof w.value === "number" && w.value > 0)
+      .map((w) => ({ text: w.text, value: w.value })) || [];
 
   if (!words || words.length === 0 || validWords.length === 0) {
     return (
@@ -42,16 +34,6 @@ function WordCloudContent({ words }: WordCloudProps) {
       </div>
     );
   }
-
-  const options = {
-    rotations: 2,
-    rotationSteps: 2,
-    fontSizes: [12, 60] as [number, number],
-    fontFamily: 'var(--font-family-sans)',
-    padding: 5,
-    scale: 'sqrt' as const,
-    transitionDuration: 1000,
-  };
 
   if (!mounted) {
     return (
@@ -64,11 +46,27 @@ function WordCloudContent({ words }: WordCloudProps) {
     );
   }
 
+  const fontSizeMapper = (word: { value: number }) =>
+    Math.max(12, Math.min(60, Math.sqrt(word.value) * 8));
+
+  const rotate = () => {
+    const rotations = [-90, 0];
+    return rotations[Math.floor(Math.random() * rotations.length)];
+  };
+
   return (
     <div className={styles.container}>
       <h3 className={styles.title}>Word Cloud</h3>
       <div className={styles.wordCloudWrapper}>
-        <ReactWordcloud words={validWords} options={options} />
+        <ReactD3Cloud
+          words={validWords}
+          width={500}
+          height={300}
+          font="var(--font-family-sans)"
+          fontSize={fontSizeMapper}
+          rotate={rotate}
+          padding={5}
+        />
       </div>
     </div>
   );
