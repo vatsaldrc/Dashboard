@@ -1,50 +1,16 @@
 stages:
   - build
-  # - deploy
 
 variables:
   IMAGE_NAME: docker.ryze-digital.de/botpress/dashboard
   IMAGE_TAGGED: "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-  IMAGE_LATEST: "$IMAGE_NAME:latest"
   IMAGE_LATEST_DEV: "$IMAGE_NAME:latest-dev"
-  TZ: Europe/Berlin
-  LOG_LEVEL: INFO
-  MYSQL_HOST: $MYSQL_HOST
-  MYSQL_USER: $MYSQL_USER
-  MYSQL_PASSWORD: $MYSQL_PASSWORD
-  MYSQL_DATABASE: $MYSQL_DATABASE
+  IMAGE_LATEST_RYZE: "$IMAGE_NAME:latest-ryze"
 
 before_script:
   - echo "Starting CI/CD pipeline for botpress dashboard..."
 
-# -------------------
-# Build & Push Docker
-# -------------------
-# Build for main/master branch
 build:
-  stage: build
-  image: docker:24.0.5
-  services:
-    - docker:24.0.5-dind
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
-      when: always
-  script:
-    # Login to registry
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD docker.ryze-digital.de
-
-    # Build Docker image from Dockerfile
-    - docker build -t $IMAGE_TAGGED --target runner .
-    - docker tag $IMAGE_TAGGED $IMAGE_LATEST
-
-    # Push both tags
-    - docker push $IMAGE_TAGGED
-    - docker push $IMAGE_LATEST
-
-    - echo "Build and push completed successfully"
-
-# Build for development branch
-build:dev:
   stage: build
   image: docker:24.0.5
   services:
@@ -54,20 +20,22 @@ build:dev:
       when: always
   script:
     # Login to registry
-    - echo "Logging in to Docker registry..."
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD docker.ryze-digital.de
 
-    # Build Docker image from Dockerfile
-    - echo "Building Docker image..."
+    - echo "🚀 Building Docker image..."
+
+    # Build image once
     - docker build -t $IMAGE_TAGGED --target runner .
 
-    # Tag the image with latest-dev
-    - echo "Tagging image with latest-dev..."
+    # Tag for dev and ryze
     - docker tag $IMAGE_TAGGED $IMAGE_LATEST_DEV
+    - docker tag $IMAGE_TAGGED $IMAGE_LATEST_RYZE
 
-    # Push both tags
-    - echo "Pushing images to registry..."
+    - echo "📦 Pushing images..."
+
+    # Push all tags
     - docker push $IMAGE_TAGGED
     - docker push $IMAGE_LATEST_DEV
+    - docker push $IMAGE_LATEST_RYZE
 
-    - echo "Build and push for development completed successfullyss"
+    - echo "Build and push completed successfully"
