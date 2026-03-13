@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Count booking started from workflow_execution_logs table
-    const workflowId = process.env.WORKFLOW_ID || 'wf-b493aa0010';
+    const workflowId = process.env.WORKFLOW_ID;
     const bookingStartedCount = await prisma.workflowExecutionLog.count({
       where: {
         workflowId: workflowId,

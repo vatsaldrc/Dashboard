@@ -13,6 +13,7 @@ variables:
   MYSQL_USER: $MYSQL_USER
   MYSQL_PASSWORD: $MYSQL_PASSWORD
   MYSQL_DATABASE: $MYSQL_DATABASE
+  WORKFLOW_ID: $WORKFLOW_ID
 
 before_script:
   - echo "Starting CI/CD pipeline for botpress dashboard..."
