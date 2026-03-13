@@ -5,6 +5,7 @@ variables:
   IMAGE_NAME: docker.ryze-digital.de/botpress/dashboard
   IMAGE_TAGGED: "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
   IMAGE_LATEST_DEV: "$IMAGE_NAME:latest-dev"
+  IMAGE_LATEST_RYZE: "$IMAGE_NAME:latest"
   TZ: Europe/Berlin
   LOG_LEVEL: INFO
   MYSQL_HOST: $MYSQL_HOST
