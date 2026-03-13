@@ -104,9 +104,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Count booking started from workflow_execution_logs table
+    const workflowId = process.env.WORKFLOW_ID;
     const bookingStartedCount = await prisma.workflowExecutionLog.count({
       where: {
-        workflowId: 'wf-b493aa0010',
+        workflowId: workflowId,
         startedAt: {
           gte: fromDateOnly,
           lte: toDateOnly,
@@ -591,7 +592,7 @@ UNION ALL
 -- 1b. START -> DROPPED (workflows that never selected contact method)
 SELECT 'booking_started' AS source, 'dropped' AS target, COUNT(DISTINCT w.execution_id) AS value
 FROM workflow_execution_logs w
-WHERE w.workflow_id = 'wf-b493aa0010'
+WHERE w.workflow_id = ${workflowId}
   AND w.started_at BETWEEN ${fromDateTime} AND ${toDateTime}
   AND NOT EXISTS (
     SELECT 1 FROM workflow_activity_logs a

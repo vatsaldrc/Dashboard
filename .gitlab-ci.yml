@@ -5,7 +5,13 @@ variables:
   IMAGE_NAME: docker.ryze-digital.de/botpress/dashboard
   IMAGE_TAGGED: "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
   IMAGE_LATEST_DEV: "$IMAGE_NAME:latest-dev"
-  IMAGE_LATEST_RYZE: "$IMAGE_NAME:latest-ryze"
+  TZ: Europe/Berlin
+  LOG_LEVEL: INFO
+  MYSQL_HOST: $MYSQL_HOST
+  MYSQL_USER: $MYSQL_USER
+  MYSQL_PASSWORD: $MYSQL_PASSWORD
+  MYSQL_DATABASE: $MYSQL_DATABASE
+  WORKFLOW_ID: $WORKFLOW_ID
 
 before_script:
   - echo "Starting CI/CD pipeline for botpress dashboard..."
