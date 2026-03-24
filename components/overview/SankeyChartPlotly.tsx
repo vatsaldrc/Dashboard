@@ -3,8 +3,6 @@
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import styles from "./SankeyChart.module.scss";
-
-
 import Plot from "react-plotly.js";
 // Dynamic import to avoid SSR issues with Plotly
 // const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
