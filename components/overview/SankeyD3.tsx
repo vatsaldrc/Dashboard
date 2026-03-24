@@ -143,16 +143,17 @@ export default function SankeyChart({ data }: SankeyChartProps) {
         .append("stop")
         .attr("offset", "0%")
         .attr("stop-color", NODE_COLORS[srcNode.id] || "#6366f1")
-        .attr("stop-opacity", 0.5);
+        .attr("stop-opacity", 0.9);
       grad
         .append("stop")
         .attr("offset", "100%")
         .attr("stop-color", NODE_COLORS[tgtNode.id] || "#94a3b8")
-        .attr("stop-opacity", 0.25);
+        .attr("stop-opacity", 0.7);
     });
 
-    // Links
-    g.append("g")
+    // ── Links ────────────────────────────────────────────────────────────────
+    const linkPaths = g
+      .append("g")
       .selectAll("path")
       .data(graph.links)
       .join("path")
@@ -160,12 +161,12 @@ export default function SankeyChart({ data }: SankeyChartProps) {
       .attr("stroke", (_, i) => `url(#sg-${i})`)
       .attr("stroke-width", (d) => Math.max(1, (d as any).width))
       .attr("fill", "none")
-      .attr("opacity", 0.5)
+      .attr("opacity", 0.15)
       .style("cursor", "pointer")
       .on("mouseenter", function (event, d) {
         d3.select(this)
-          .attr("opacity", 1)
-          .attr("stroke-width", (d: any) => Math.max(1, d.width) + 2);
+          .attr("opacity", 0.75)
+          .attr("stroke-width", Math.max(1, (d as any).width) + 3);
         const src = (d as any).source;
         const tgt = (d as any).target;
         setTooltip({
@@ -180,7 +181,7 @@ export default function SankeyChart({ data }: SankeyChartProps) {
       })
       .on("mouseleave", function (event, d) {
         d3.select(this)
-          .attr("opacity", 0.5)
+          .attr("opacity", 0.3)
           .attr("stroke-width", Math.max(1, (d as any).width));
         setTooltip((t) => ({ ...t, visible: false }));
       });
@@ -194,7 +195,7 @@ export default function SankeyChart({ data }: SankeyChartProps) {
       .attr("y", (d) => (d as any).y0)
       .attr("width", (d) => (d as any).x1 - (d as any).x0)
       .attr("height", (d) => Math.max(1, (d as any).y1 - (d as any).y0))
-    //   .attr("rx", 4)
+      .attr("rx", 0)
       .attr("fill", (d) => NODE_COLORS[(d as any).id] || "#94a3b8")
       .attr("opacity", 0.9)
       .style("cursor", "pointer")
@@ -222,18 +223,13 @@ export default function SankeyChart({ data }: SankeyChartProps) {
     // Node labels (outside the node bar)
     nodeGroups
       .append("text")
-      .attr("x", (d) => {
-        const nd = d as any;
-        return nd.x0 < innerW / 2 ? nd.x0 - 10 : nd.x1 + 10;
-      })
+      .attr("x", (d) => (d as any).x1 + 10)
       .attr("y", (d) => {
         const nd = d as any;
         return (nd.y0 + nd.y1) / 2;
       })
       .attr("dy", "0.35em")
-      .attr("text-anchor", (d) =>
-        (d as any).x0 < innerW / 2 ? "end" : "start",
-      )
+      .attr("text-anchor", "start")
       .attr("fill", (d) => {
         const id = (d as any).id;
         // if (id === "dropped") return "var(--color-error, #f87171)";
