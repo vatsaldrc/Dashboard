@@ -162,10 +162,12 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
 
       let y = 0;
       colNodes.forEach((node) => {
-        const h = node.y1 - node.y0;
-        node.y0 = y;
-        node.y1 = y + h;
-        y += h + NODE_PADDING;
+        if (node.y1 && node.y0) {
+          const h = node.y1 - node.y0;
+          node.y0 = y;
+          node.y1 = y + h;
+          y += h + NODE_PADDING;
+        }
       });
     });
 
