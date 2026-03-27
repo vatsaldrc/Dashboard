@@ -24,6 +24,7 @@ import { SummaryList } from '@/components/overview/SummaryList';
 import styles from './page.module.scss';
 import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
 import SankeyChart from '@/components/overview/SankeyD3';
+import { AlluvialChart } from '@/components/overview/AlluvialChart';
 
 interface OverviewData {
   botpressByDate: Array<{
@@ -69,6 +70,7 @@ interface OverviewData {
     nodes: { id: string }[];
     links: { source: string; target: string; value: number }[];
   };
+  stepFlowData: any
 }
 
 export default function OverviewPage() {
@@ -219,8 +221,11 @@ export default function OverviewPage() {
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
             {/* <BookingSankeyChartPlotly data={data.sankeyData} /> */}
-            <SankeyChart data={data.sankeyData} />
-            {data.wordCloudData && data.wordCloudData?.length > 0 && <WordCloud words={data.wordCloudData} />}
+            {/* <SankeyChart data={data.sankeyData} /> */}
+            <AlluvialChart data={data.sankeyData} />
+             {data.wordCloudData && data.wordCloudData?.length > 0 && (
+              <WordCloud words={data.wordCloudData} />
+            )}
             <SummaryList summaries={data.summaries} />
           </div>
         </div>
