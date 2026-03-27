@@ -162,7 +162,7 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
 
       let y = 0;
       colNodes.forEach((node) => {
-        const h = node.y1 - node.y0;
+        const h = (node.y1 ?? 0) - (node.y0 ?? 0);
         node.y0 = y;
         node.y1 = y + h;
         y += h + NODE_PADDING;
