@@ -25,8 +25,10 @@ import styles from './page.module.scss';
 import { BookingSankeyChartPlotly } from '@/components/overview/SankeyChartPlotly';
 import SankeyChart from '@/components/overview/SankeyD3';
 import { AlluvialChart } from '@/components/overview/AlluvialChart';
+import { ClientConfig } from '@/lib/clientConfig';
 
 interface OverviewData {
+  clientFeatures: ClientConfig["charts"];
   botpressByDate: Array<{
     date: string;
     returningUsers: number;
@@ -70,7 +72,7 @@ interface OverviewData {
     nodes: { id: string }[];
     links: { source: string; target: string; value: number }[];
   };
-  stepFlowData: any
+  stepFlowData: any;
 }
 
 export default function OverviewPage() {
@@ -216,14 +218,31 @@ export default function OverviewPage() {
               dataByDate={data.personalContactRequestedByDate}
             />
             <SentimentChart data={data.sentimentCounts} />
-            <ContactChannelChart data={data.contactChannelCounts} />
+            {/* <ContactChannelChart data={data.contactChannelCounts} />
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
-            <VermarktungsregionenChart data={data.vermarktungsregionenCounts} />
+            <VermarktungsregionenChart data={data.vermarktungsregionenCounts} /> */}
+            {data.clientFeatures.showContactChannelChart && (
+              <ContactChannelChart data={data.contactChannelCounts!} />
+            )}
+            {data.clientFeatures.showCustomerTypeChart && (
+              <CustomerTypeChart data={data.customerTypeCounts!} />
+            )}
+            {data.clientFeatures.showVermarktungsregionen && (
+              <VermarktungsregionenChart
+                data={data.vermarktungsregionenCounts!}
+              />
+            )}
+            {data.clientFeatures.showCustomerRegionChart && (
+              <CustomerRegionChart data={data.customerRegionCounts!} />
+            )}
+            {data.clientFeatures.showSankeyChart && (
+              <AlluvialChart data={data.sankeyData} />
+            )}
             {/* <BookingSankeyChartPlotly data={data.sankeyData} /> */}
             {/* <SankeyChart data={data.sankeyData} /> */}
-            <AlluvialChart data={data.sankeyData} />
-             {data.wordCloudData && data.wordCloudData?.length > 0 && (
+            {/* <AlluvialChart data={data.sankeyData} /> */}
+            {data.wordCloudData && data.wordCloudData?.length > 0 && (
               <WordCloud words={data.wordCloudData} />
             )}
             <SummaryList summaries={data.summaries} />
