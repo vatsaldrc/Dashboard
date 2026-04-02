@@ -10,6 +10,7 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const config = getClientConfig();
+    console.log("CONFIG INFO-> ", config)
     const searchParams = request.nextUrl.searchParams;
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
