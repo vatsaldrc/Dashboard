@@ -504,7 +504,7 @@ GROUP BY target;
       summaries,
       sankeyData,
       // Let the frontend know which charts to render without it needing to import clientConfig
-      clientFeatures: config.charts,
+      clientFeatures: config,
     });
   } catch (error) {
     console.error('Error fetching overview data:', error);

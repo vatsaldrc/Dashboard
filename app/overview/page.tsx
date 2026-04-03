@@ -28,7 +28,7 @@ import { AlluvialChart } from '@/components/overview/AlluvialChart';
 import { ClientConfig } from '@/lib/clientConfig';
 
 interface OverviewData {
-  clientFeatures: ClientConfig["charts"];
+  clientFeatures: ClientConfig;
   botpressByDate: Array<{
     date: string;
     returningUsers: number;
@@ -98,6 +98,10 @@ export default function OverviewPage() {
     }
   }, [status, fromDate, toDate, router]);
 
+  useEffect(() => {
+    console.log(data?.clientFeatures)
+  },[data])
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -149,7 +153,11 @@ export default function OverviewPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>VRM Media Sales Chatbot Analytics</h1>
+          <h1 className={styles.title}>
+            {data.clientFeatures.clientId === "vrm"
+              ? "VRM Media Sales Chatbot Analytics"
+              : "RYZE Digital Chatbot Analytics"}
+          </h1>
           <div className={styles.userInfo}>
             <span className={styles.userEmail}>{session.user?.email}</span>
             <SignOutButton variant="outline" size="sm" />
@@ -222,21 +230,21 @@ export default function OverviewPage() {
             <CustomerTypeChart data={data.customerTypeCounts} />
             <CustomerRegionChart data={data.customerRegionCounts} />
             <VermarktungsregionenChart data={data.vermarktungsregionenCounts} /> */}
-            {data.clientFeatures.showContactChannelChart && (
+            {data.clientFeatures.charts.showContactChannelChart && (
               <ContactChannelChart data={data.contactChannelCounts!} />
             )}
-            {data.clientFeatures.showCustomerTypeChart && (
+            {data.clientFeatures.charts.showCustomerTypeChart && (
               <CustomerTypeChart data={data.customerTypeCounts!} />
             )}
-            {data.clientFeatures.showVermarktungsregionen && (
+            {data.clientFeatures.charts.showVermarktungsregionen && (
               <VermarktungsregionenChart
                 data={data.vermarktungsregionenCounts!}
               />
             )}
-            {data.clientFeatures.showCustomerRegionChart && (
+            {data.clientFeatures.charts.showCustomerRegionChart && (
               <CustomerRegionChart data={data.customerRegionCounts!} />
             )}
-            {data.clientFeatures.showSankeyChart && (
+            {data.clientFeatures.charts.showSankeyChart && (
               <AlluvialChart data={data.sankeyData} />
             )}
             {/* <BookingSankeyChartPlotly data={data.sankeyData} /> */}
