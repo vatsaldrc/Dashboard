@@ -98,10 +98,6 @@ export default function OverviewPage() {
     }
   }, [status, fromDate, toDate, router]);
 
-  useEffect(() => {
-    console.log(data?.clientFeatures)
-  },[data])
-
   const fetchData = async () => {
     setLoading(true);
     try {

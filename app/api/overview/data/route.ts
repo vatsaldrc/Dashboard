@@ -10,7 +10,6 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const config = getClientConfig();
-    console.log("CONFIG INFO-> ", config)
     const searchParams = request.nextUrl.searchParams;
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
@@ -306,7 +305,9 @@ export async function GET(request: NextRequest) {
             const cleaned = String(item.postalCode)
               .replace(/[\\"'"]/g, '')
               .trim();
-            if (cleaned) acc[cleaned] = (acc[cleaned] || 0) + 1;
+            if (/^\d+$/.test(cleaned)) {
+              acc[cleaned] = (acc[cleaned] || 0) + 1;
+            }
           }
           return acc;
         }, {})
