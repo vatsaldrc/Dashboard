@@ -58,13 +58,15 @@ export async function buildVermarktungsregionen(
     }
 
     // 2. Fetch mappings from DB in one query
-    const mappings = await prisma.postalMP.findMany({
-        where: { postalCode: { in: Array.from(postalCodes) } },
+    const mappings = await prisma.plzList.findMany({
+        where: { plz: { in: Array.from(postalCodes) } },
     });
 
     const postalToRegion: Record<string, string> = {};
     for (const m of mappings) {
-        postalToRegion[m.postalCode] = m.mp;
+        if (m.plz && m.mp) {
+            postalToRegion[m.plz] = m.mp;
+        }
     }
 
     // 3. Aggregate

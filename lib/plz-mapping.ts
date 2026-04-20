@@ -21,13 +21,15 @@ export async function getPLZMapping(): Promise<PLZMapping> {
 
   try {
     console.log(`[PLZ Mapping] Attempting to load from database...`);
-    const postalMappings = await prisma.postalMP.findMany();
+    const postalMappings = await prisma.plzList.findMany();
     
-    console.log(`[PLZ Mapping] Found ${postalMappings.length} records in postal_mp table`);
+    console.log(`[PLZ Mapping] Found ${postalMappings.length} records in plz_list table`);
     
     plzCache = {};
     for (const item of postalMappings) {
-      plzCache[item.postalCode] = item.mp;
+      if (item.plz && item.mp) {
+        plzCache[item.plz] = item.mp;
+      }
     }
     
     console.log(`[PLZ Mapping] Created mapping with ${Object.keys(plzCache).length} unique postal codes`);

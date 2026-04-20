@@ -79,11 +79,18 @@ model ChatbotAnalytics {
     @@map("chatbot_analytics")
 }
 
-model PostalMP {
-    postalCode  String  @id @db.VarChar(10) @map("Postal Code")
-    mp          String  @db.VarChar(50)
+model PlzList {
+    id                  Int       @id @default(autoincrement())
+    land                String?   @db.VarChar(10)
+    plz                 String?   @db.VarChar(10)
+    ort                 String?   @db.VarChar(255)
+    mp                  String?   @db.VarChar(255)
+    verkaufsleiterName  String?   @map("verkaufsleiter_name") @db.VarChar(255)
+    verkaufsleiterMail  String?   @map("verkaufsleiter_mail") @db.VarChar(255)
+    createdAt           DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
 
-    @@map("postal_mp")
+    @@index([plz])
+    @@map("plz_list")
 }
 
 model Leads {
