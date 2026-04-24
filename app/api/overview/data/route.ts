@@ -439,6 +439,11 @@ AND NOT EXISTS (
     SELECT 1 FROM BaseEvents ct 
     WHERE ct.execution_id = d.execution_id AND ct.activity = 'customer_type_selected'
 )
+AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = d.execution_id
+       OR l.conversation_id = d.conversation_id
+)
 GROUP BY target;
 `;
     }
