@@ -321,7 +321,8 @@ export async function GET(request: NextRequest) {
 
     let sankeyRawData: any[] = [];
     let sankeyData: any = null;
-    if (config.charts.showSankeyChart) {
+    if (config.charts.showSankeyChart && config.clientId === 'vrm') {
+      // ── VRM Sankey: booking → contact method → details → customer type → lead ──
       sankeyRawData = await prisma.$queryRaw<
         { source: string; target: string; value: number }[]
       >`
@@ -446,18 +447,176 @@ AND NOT EXISTS (
 )
 GROUP BY target;
 `;
+    } else if (config.charts.showSankeyChart && config.clientId === 'ryze') {
+      // ── RYZE Sankey: booking → firstname → lastname → email → position → company → lead ──
+      sankeyRawData = await prisma.$queryRaw<
+        { source: string; target: string; value: number }[]
+      >`
+WITH RyzeActivities AS (
+  SELECT
+    a.execution_id,
+    a.conversation_id,
+    a.activity,
+    a.created_at
+  FROM workflow_activity_logs a
+  INNER JOIN workflow_execution_logs w
+    ON w.execution_id = a.execution_id
+  WHERE w.workflow_id = ${workflowId}
+    AND a.created_at BETWEEN ${fromDateTime} AND ${toDateTime}
+),
+ExecutionSteps AS (
+  SELECT
+    w.execution_id,
+    w.conversation_id,
+    MAX(CASE WHEN r.activity = 'firstname_collected' THEN 1 ELSE 0 END) AS has_firstname,
+    MAX(CASE WHEN r.activity = 'lastname_collected'  THEN 1 ELSE 0 END) AS has_lastname,
+    MAX(CASE WHEN r.activity = 'email_collected'     THEN 1 ELSE 0 END) AS has_email,
+    MAX(CASE WHEN r.activity = 'position_collected'  THEN 1 ELSE 0 END) AS has_position,
+    MAX(CASE WHEN r.activity = 'company_details_collected' THEN 1 ELSE 0 END) AS has_company
+  FROM workflow_execution_logs w
+  LEFT JOIN RyzeActivities r ON r.execution_id = w.execution_id
+  WHERE w.workflow_id = ${workflowId}
+    AND w.started_at BETWEEN ${fromDateTime} AND ${toDateTime}
+  GROUP BY w.execution_id, w.conversation_id
+)
+
+-- 1. booking_started → firstname_collected
+SELECT 'booking_started' AS source, 'firstname_collected' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_firstname = 1
+
+UNION ALL
+
+-- 1b. booking_started → dropped (never reached firstname)
+SELECT 'booking_started' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_firstname = 0
+
+UNION ALL
+
+-- 2. firstname_collected → lastname_collected
+SELECT 'firstname_collected' AS source, 'lastname_collected' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_firstname = 1 AND has_lastname = 1
+
+UNION ALL
+
+-- 2b. firstname_collected → dropped
+SELECT 'firstname_collected' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps
+WHERE has_firstname = 1 AND has_lastname = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = ExecutionSteps.execution_id
+       OR l.conversation_id = ExecutionSteps.conversation_id
+  )
+
+UNION ALL
+
+-- 3. lastname_collected → email_collected
+SELECT 'lastname_collected' AS source, 'email_collected' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_lastname = 1 AND has_email = 1
+
+UNION ALL
+
+-- 3b. lastname_collected → dropped
+SELECT 'lastname_collected' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps
+WHERE has_lastname = 1 AND has_email = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = ExecutionSteps.execution_id
+       OR l.conversation_id = ExecutionSteps.conversation_id
+  )
+
+UNION ALL
+
+-- 4. email_collected → position_collected
+SELECT 'email_collected' AS source, 'position_collected' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_email = 1 AND has_position = 1
+
+UNION ALL
+
+-- 4b. email_collected → dropped
+SELECT 'email_collected' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps
+WHERE has_email = 1 AND has_position = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = ExecutionSteps.execution_id
+       OR l.conversation_id = ExecutionSteps.conversation_id
+  )
+
+UNION ALL
+
+-- 5. position_collected → company_details_collected
+SELECT 'position_collected' AS source, 'company_details_collected' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps WHERE has_position = 1 AND has_company = 1
+
+UNION ALL
+
+-- 5b. position_collected → dropped
+SELECT 'position_collected' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps
+WHERE has_position = 1 AND has_company = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = ExecutionSteps.execution_id
+       OR l.conversation_id = ExecutionSteps.conversation_id
+  )
+
+UNION ALL
+
+-- 6. company_details_collected → lead_created
+SELECT 'company_details_collected' AS source, 'lead_created' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps es
+WHERE has_company = 1
+  AND EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = es.execution_id
+       OR l.conversation_id = es.conversation_id
+  )
+
+UNION ALL
+
+-- 6b. company_details_collected → dropped
+SELECT 'company_details_collected' AS source, 'dropped' AS target,
+       COUNT(*) AS value
+FROM ExecutionSteps es
+WHERE has_company = 1
+  AND NOT EXISTS (
+    SELECT 1 FROM leads l
+    WHERE l.workflow_execution_id = es.execution_id
+       OR l.conversation_id = es.conversation_id
+  );
+`;
     }
-    if (config.charts.showSankeyChart) {
-      sankeyData = {
-        nodes: Array.from(
-          new Set(sankeyRawData.flatMap((row) => [row.source, row.target]))
-        ).map((id) => ({ id })),
-        links: sankeyRawData.map((row) => ({
+
+    if (config.charts.showSankeyChart && sankeyRawData.length > 0) {
+      const activeLinks = sankeyRawData
+        .filter((row) => Number(row.value) > 0)
+        .map((row) => ({
           source: row.source,
           target: row.target,
           value: Number(row.value),
-        })),
-      };
+        }));
+
+      if (activeLinks.length > 0) {
+        sankeyData = {
+          nodes: Array.from(
+            new Set(activeLinks.flatMap((l) => [l.source, l.target]))
+          ).map((id) => ({ id })),
+          links: activeLinks,
+        };
+      }
     }
       
 

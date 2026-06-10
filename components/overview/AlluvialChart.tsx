@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { sankey, sankeyLeft } from "d3-sankey";
-import styles from "./SankeyChart.module.scss"; // reuse same styles
+import styles from "./SankeyChart.module.scss";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface Node {
@@ -23,32 +23,42 @@ interface AlluvialChartProps {
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const NODE_WIDTH = 20;
 const NODE_PADDING = 22;
-const BAND_OPACITY = 0.55; // default band fill opacity
-const BAND_OPACITY_HOVER = 0.9; // hovered band
-const BAND_OPACITY_DIMMED = 0.12; // all others while one is hovered
+const BAND_OPACITY = 0.55;
+const BAND_OPACITY_HOVER = 0.9;
+const BAND_OPACITY_DIMMED = 0.12;
 
 const NODE_COLORS: Record<string, string> = {
   booking_started: "#3b82f6",
+  lead_created: "#10b981",
+  dropped: "#ef4444",
   contact_method_phone: "#8b5cf6",
   contact_method_email: "#a78bfa",
   contact_method_both: "#c4b5fd",
   details_collected: "#06b6d4",
   customer_type_b2b: "#f59e0b",
   customer_type_b2c: "#fb923c",
-  lead_created: "#10b981",
-  dropped: "#ef4444",
+  firstname_collected: "#8b5cf6",
+  lastname_collected: "#7c3aed",
+  email_collected: "#06b6d4",
+  position_collected: "#f59e0b",
+  company_details_collected: "#f97316",
 };
 
 const NODE_LABELS: Record<string, string> = {
-  booking_started: "Persönliche Beratung gedrückt",
+  booking_started: "Beratung gestartet",
+  lead_created: "Lead erstellt",
+  dropped: "Abgebrochen",
   contact_method_phone: "Telefon",
   contact_method_email: "E-Mail",
   contact_method_both: "Beides",
   details_collected: "Weitere Datenaufnahme",
   customer_type_b2b: "Geschäftskunde",
   customer_type_b2c: "Privatkunde",
-  lead_created: "Lead erstellt",
-  dropped: "Vorzeitig ausgestiegen",
+  firstname_collected: "Vorname erfasst",
+  lastname_collected: "Nachname erfasst",
+  email_collected: "E-Mail erfasst",
+  position_collected: "Position erfasst",
+  company_details_collected: "Unternehmensdetails erfasst",
 };
 
 const COLUMN_ORDER = [
@@ -59,6 +69,11 @@ const COLUMN_ORDER = [
   "details_collected",
   "customer_type_b2b",
   "customer_type_b2c",
+  "firstname_collected",
+  "lastname_collected",
+  "email_collected",
+  "position_collected",
+  "company_details_collected",
   "lead_created",
   "dropped",
 ];
@@ -88,17 +103,12 @@ const MOCK_DATA = {
 };
 
 // ─── ALLUVIAL BAND PATH ───────────────────────────────────────────────────────
-// Draws a straight-edged parallelogram band between two nodes.
-// Unlike Sankey's bezier curve, this uses straight diagonal lines — the
-// defining visual of an Alluvial diagram.
 function alluvialBandPath(link: any): string {
   const x0 = link.source.x1;
   const x1 = link.target.x0;
   const half = link.width / 2;
-  const cp = (x0 + x1) / 2; // cubic bezier control point x (midpoint)
+  const cp = (x0 + x1) / 2;
 
-  // Top edge: cubic bezier curve source-top -> target-top
-  // Bottom edge: cubic bezier curve back target-bottom -> source-bottom
   return `
     M ${x0} ${link.y0 - half}
     C ${cp} ${link.y0 - half}, ${cp} ${link.y1 - half}, ${x1} ${link.y1 - half}
@@ -120,7 +130,7 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
 
   const WIDTH = 1100;
   const HEIGHT = 500;
-  const MARGIN = { top: 40, right: 200, bottom: 20, left: 200 };
+  const MARGIN = { top: 40, right: 200, bottom: 20, left: 160 };
 
   useEffect(() => {
     if (!svgRef.current || !data?.nodes?.length) return;
@@ -139,7 +149,7 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
       value: Number(l.value),
     }));
 
-    // ── d3-sankey layout (handles column placement & proportions) ────────────
+    // ── d3-sankey layout ─────────────────────────────────────────────────────
     const sankeyLayout = sankey<{ id: string }, { value: number }>()
       .nodeId((d) => d.id)
       .nodeWidth(NODE_WIDTH)
@@ -171,12 +181,19 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
 
     sankeyLayout.update(graph);
 
+    // ── De-duplicate nodes after layout update ───────────────────────────────
+    // sankeyLayout.update() can introduce duplicate entries in graph.nodes;
+    // keep only the last occurrence of each id (which has the final positions).
+    const nodeMap = new Map<string, any>();
+    graph.nodes.forEach((n) => nodeMap.set((n as any).id, n));
+    const uniqueNodes = Array.from(nodeMap.values());
+
     // ── SVG group ────────────────────────────────────────────────────────────
     const g = svg
       .append("g")
       .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
-    // ── Gradient defs (source color → target color) ──────────────────────────
+    // ── Gradient defs ────────────────────────────────────────────────────────
     const defs = svg.append("defs");
     graph.links.forEach((link, i) => {
       const src = link.source as any;
@@ -197,9 +214,7 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
         .attr("stop-color", NODE_COLORS[tgt.id] || "#94a3b8");
     });
 
-    // ── Bands (alluvial links) ───────────────────────────────────────────────
-    // d3-sankey stores link offsets in y0 (source offset) and y1 (target offset)
-    // relative to node.y0, and width = band thickness
+    // ── Bands ────────────────────────────────────────────────────────────────
     const bands = g
       .append("g")
       .attr("class", "bands")
@@ -211,10 +226,8 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
       .attr("opacity", BAND_OPACITY)
       .style("cursor", "pointer")
       .on("mouseenter", function (event, d) {
-        // Dim all, highlight hovered
         bands.attr("opacity", BAND_OPACITY_DIMMED);
         d3.select(this).attr("opacity", BAND_OPACITY_HOVER);
-
         const src = (d as any).source;
         const tgt = (d as any).target;
         setTooltip({
@@ -233,7 +246,7 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
       });
 
     // ── Nodes ────────────────────────────────────────────────────────────────
-    const nodeGroups = g.append("g").selectAll("g").data(graph.nodes).join("g");
+    const nodeGroups = g.append("g").selectAll("g").data(uniqueNodes).join("g");
 
     nodeGroups
       .append("rect")
@@ -265,12 +278,32 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
       });
 
     // ── Node labels ──────────────────────────────────────────────────────────
+    // Group unique nodes by their x0 column position
+    const nodesByColumn = d3.group(uniqueNodes, (d) => (d as any).x0);
+
     nodeGroups
       .append("text")
-      .attr("x", (d) => (d as any).x1 + 10)
+      .attr("x", (d) => (d as any).x1 + 8)
       .attr("y", (d) => {
         const nd = d as any;
-        return (nd.y0 + nd.y1) / 2;
+        const colNodes = nodesByColumn.get(nd.x0) ?? [];
+
+        // If only one node in this column, center on node midpoint
+        if (colNodes.length <= 1) {
+          return (nd.y0 + nd.y1) / 2;
+        }
+
+        // Multiple nodes sharing a column: spread labels to avoid overlap.
+        // Sort column nodes by their vertical midpoint so staggering is
+        // applied top-to-bottom rather than by insertion order.
+        const sorted = [...colNodes].sort(
+          (a, b) => (a as any).y0 - (b as any).y0,
+        );
+        const idx = sorted.findIndex((n) => (n as any).id === nd.id);
+        const midY = (nd.y0 + nd.y1) / 2;
+        const STAGGER = 10;
+        // Even-index labels nudge up slightly, odd nudge down
+        return midY + (idx % 2 === 0 ? -STAGGER : STAGGER);
       })
       .attr("dy", "0.35em")
       .attr("text-anchor", "start")
@@ -280,15 +313,15 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
         if (id === "lead_created") return "var(--color-success, #34d399)";
         return "var(--color-text-primary, #cbd5e1)";
       })
-      .attr("font-size", 12)
+      .attr("font-size", 11)
       .attr("font-family", "var(--font-family, system-ui, sans-serif)")
       .attr("font-weight", 500)
       .style("pointer-events", "none")
       .text((d) => NODE_LABELS[(d as any).id] || (d as any).id);
   }, [data]);
 
-  // ── Empty state ──────────────────────────────────────────────────────────────
-  if (!data?.nodes?.length) {
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (!data?.nodes?.length || !data?.links?.length) {
     return (
       <div className={styles.card}>
         <h3 className={styles.title}>Flow der Beratungsgesuche</h3>
@@ -323,12 +356,18 @@ export function AlluvialChart({ data = MOCK_DATA }: AlluvialChartProps) {
 
       {/* Legend */}
       <div className={styles.legend}>
-        {Object.entries(NODE_COLORS).map(([id, color]) => (
-          <div key={id} className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: color }} />
-            <span className={styles.legendLabel}>{NODE_LABELS[id]}</span>
-          </div>
-        ))}
+        {data.nodes
+          .map((n) => n.id)
+          .filter((id) => NODE_COLORS[id])
+          .map((id) => (
+            <div key={id} className={styles.legendItem}>
+              <span
+                className={styles.legendDot}
+                style={{ background: NODE_COLORS[id] }}
+              />
+              <span className={styles.legendLabel}>{NODE_LABELS[id]}</span>
+            </div>
+          ))}
       </div>
     </div>
   );

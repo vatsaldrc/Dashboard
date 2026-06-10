@@ -47,7 +47,7 @@ const configs: Record<ClientId, ClientConfig> = {
             showCustomerTypeChart: false,
             showCustomerRegionChart: false,
             showVermarktungsregionen: false,
-            showSankeyChart: false,
+            showSankeyChart: true,
         },
     },
 };
